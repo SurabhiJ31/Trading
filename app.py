@@ -30,7 +30,7 @@ def create_session(url):
     session.get(url, timeout=10)
     return session
 
-@st.cache_data
+#@st.cache_data
 def get_nifty50_companies():
     session = create_session("https://www.nseindia.com")
     url = "https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050"
