@@ -50,7 +50,8 @@ def fetch_stock_data(symbol, period="1y"):
     df['Stock'] = symbol
     return df
 
-def compute_summary_metrics(df):
+def compute_summary_metrics(symbol, period="1y"):
+    
     # -1 will get the last row which is the latest data. So current price
     current_price = float(df['Close'].iloc[-1])
 
