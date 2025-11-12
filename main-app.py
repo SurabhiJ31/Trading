@@ -5,6 +5,7 @@ import requests
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import os
 
 #constants
 
@@ -84,40 +85,7 @@ def compute_summary_metrics(symbol, period="1y"):
         summary[f"{label} Delta"] = round(delta, 2)
     return summary
 
-def get_option_chain_data(symbol):
-    """
-    month_year example: 'Oct 2025'
-    """
-    session = create_session(f"https://www.nseindia.com/api/option-chain-equities?symbol={symbol}")
-    url = f"https://www.nseindia.com/api/option-chain-equities?symbol={symbol}"
-    response = session.get(url, timeout=10)
-    response.raise_for_status()
-    data = response.json()
-    return data
-
-def get_option_records(data, option_type, expiry_date):
-    records=[]
-    # Filter data for selected expiry
-    for item in data["records"]["data"]:
-        if item.get("expiryDate") != expiry_date:
-            continue
-
-        if option_type.upper() == "CALL" and "CE" in item:
-            opt = item["CE"]
-        elif option_type.upper() == "PUT" and "PE" in item:
-            opt = item["PE"]
-        else:
-            continue
-
-        records.append({
-        "Strike": opt.get("strikePrice"),
-        "Type": option_type.upper(),
-        "Expiry Date": expiry_date,
-        "Last Price": opt.get("lastPrice"),
-        "Underlying Value": opt.get("underlyingValue")
-        })
-    df_op_data = pd.DataFrame(records)
-    return df_op_data
+    
 
 def get_option_spread(df, option_type):
     if option_type=="PUT":
@@ -243,14 +211,14 @@ with tab2:
 
 with tab3:
     st.header("Risk - Reward Ratio")
+    file_path = os.path.join("option-data", "options.xlsx")
+    all_options_df = pd.read_excel(file_path)
+
     selected_stock = st.selectbox("Select Stock", nifty50_companies, key="tab3")
     option_type = st.selectbox("Option Type", ["PUT", "CALL"])
-    option_data=get_option_chain_data(selected_stock)
-
-    expiryDates = option_data["records"].get('expiryDates')
-    selected_expiry_Date = st.selectbox("Select Expiry Date", expiryDates)
-
-    filteredData= get_option_records(option_data, option_type, selected_expiry_Date)
-    option_strategy = get_option_spread(filteredData,option_type)
-
+    stock_options_df = all_options_df[(all_options_df['Company']==selected_stock) & (all_options_df['Type']==option_type)]
+    expiryDates = stock_options_df['Expiry Date'].unique()
+    selected_expiry_Date = st.selectbox("Select Expiry Date", expiryDates) 
+    stock_options_df = stock_options_df[stock_options_df["Expiry Date"]==selected_expiry_Date]
+    option_strategy = get_option_spread(stock_options_df,option_type)
     st.dataframe(option_strategy)
