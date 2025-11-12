@@ -36,6 +36,9 @@ def get_option_chain_data(symbol):
     session = create_session(f"https://www.nseindia.com/api/option-chain-equities?symbol={symbol}")
     url = f"https://www.nseindia.com/api/option-chain-equities?symbol={symbol}"
     response = session.get(url, timeout=10)
+    print(f"Status code: {response.status_code}")
+    print("Response length:", len(response.text))
+    print("Preview:", response.text[:500])
     response.raise_for_status()
     failedComp=[]
     df=pd.DataFrame()
@@ -66,7 +69,6 @@ def get_option_chain_data(symbol):
                   'Underlying Value': underlying
               })
       df=pd.DataFrame(records)
-      print(f"Saved option chain for {symbol}")
     except:
       failedComp.append(symbol)
     return df
@@ -77,7 +79,6 @@ os.makedirs(output_dir, exist_ok=True)
 for comp in companies:
   print(f"Fetching data for {comp}:")
   option_data = get_option_chain_data(comp)
-  print("Data head:\n", option_data.head())
   option_dfs.append(option_data)
 final_df = pd.concat(option_dfs,ignore_index=True)
 file_path = os.path.join(output_dir, "options.xlsx")
