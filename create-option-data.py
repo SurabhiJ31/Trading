@@ -1,6 +1,9 @@
 import requests
 import pandas as pd
 import os
+import subprocess
+
+#constants
 companies = [
                 "RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK",
                 "ITC", "LT", "SBIN", "BHARTIARTL", "HINDUNILVR",
@@ -15,6 +18,9 @@ companies = [
                 "BPCL", "BAJAJ-AUTO", "DIVISLAB", "HINDALCO",
                 "ADANIGREEN", "ADANIPOWER", "DABUR", "SHRIRAMFIN"
             ]
+GIT_REPO_PATH = "C:/Trading"  # Path to your local git repo
+GITHUB_BRANCH = "main"
+#-----------------------------------------
 
 def create_session(url):
     session = requests.Session()
@@ -80,3 +86,11 @@ for comp in companies:
 final_df = pd.concat(option_dfs,ignore_index=True)
 file_path = os.path.join(output_dir, "options.xlsx")
 final_df.to_excel(file_path, index=False)
+try:
+    subprocess.run(["git", "add", file_path], cwd=GIT_REPO_PATH, check=True)
+    commit_msg = f"Update option data: {os.path.basename(file_path)}"
+    subprocess.run(["git", "commit", "-m", commit_msg], cwd=GIT_REPO_PATH, check=True)
+    subprocess.run(["git", "push", "origin", GITHUB_BRANCH], cwd=GIT_REPO_PATH, check=True)
+    print("Git push successful!")
+except subprocess.CalledProcessError as e:
+        print("Git command failed:", e)

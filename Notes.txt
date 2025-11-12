@@ -1,0 +1,5 @@
+Learnings:
+1. Tried to automate the process of excel generation and git push. Created a GitHub action (.yml file) that will execute daily, will execute the script to create option excel and push it to git repo.
+2. Result: action executed successfully but generated excel did not have any data. Because same nse was not running on cloud
+3. Workaround: wrote the code to push the generated file in python only. Now the python script only will create the data and push it. As script generation will be done locally so nse problem wont be there.
+4. Will add a windows task scheduler to run the file periodically. 
