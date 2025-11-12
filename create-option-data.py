@@ -28,7 +28,11 @@ def create_session(url):
         "Referer": "https://www.nseindia.com/",
         "Connection": "keep-alive",
     })
-    session.get(url, timeout=10)
+    # Hit the home page first to get cookies
+    resp = session.get("https://www.nseindia.com", timeout=10)
+    if resp.status_code != 200:
+        print("Warning: Could not reach NSE homepage")
+
     return session
 
 def get_option_chain_data(symbol):
@@ -36,9 +40,6 @@ def get_option_chain_data(symbol):
     session = create_session(f"https://www.nseindia.com/api/option-chain-equities?symbol={symbol}")
     url = f"https://www.nseindia.com/api/option-chain-equities?symbol={symbol}"
     response = session.get(url, timeout=10)
-    print(f"Status code: {response.status_code}")
-    print("Response length:", len(response.text))
-    print("Preview:", response.text[:500])
     response.raise_for_status()
     failedComp=[]
     df=pd.DataFrame()
@@ -69,8 +70,9 @@ def get_option_chain_data(symbol):
                   'Underlying Value': underlying
               })
       df=pd.DataFrame(records)
-    except:
-      failedComp.append(symbol)
+    except Exception as e:
+        print("JSON decode failed. Response preview:", response.text[:500])
+        failedComp.append(symbol)
     return df
 
 option_dfs=[]
