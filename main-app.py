@@ -33,17 +33,7 @@ def create_session(url):
 
 #@st.cache_data
 def get_nifty50_companies():
-    session = create_session("https://www.nseindia.com")
-    url = "https://www.nseindia.com/api/equity-stockIndices?index=NIFTY%2050"
-    companies = []
-    try:
-        response = session.get(url, timeout=10)
-        response.raise_for_status()
-        data = response.json()
-        for item in data["data"][1:]:
-            companies.append(item["symbol"])
-    except:
-        companies = [
+    companies = [
                 "RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK",
                 "ITC", "LT", "SBIN", "BHARTIARTL", "HINDUNILVR",
                 "ASIANPAINT", "AXISBANK", "KOTAKBANK", "BAJFINANCE",
@@ -57,6 +47,7 @@ def get_nifty50_companies():
                 "BPCL", "BAJAJ-AUTO", "DIVISLAB", "HINDALCO",
                 "ADANIGREEN", "ADANIPOWER", "DABUR", "SHRIRAMFIN"
             ]
+        
     return companies
 
 @st.cache_data
