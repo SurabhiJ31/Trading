@@ -75,7 +75,9 @@ option_dfs=[]
 output_dir = "option-data"
 os.makedirs(output_dir, exist_ok=True)
 for comp in companies:
+  print(f"Fetching data for {comp}:")
   option_data = get_option_chain_data(comp)
+  print("Data head:\n", option_data.head())
   option_dfs.append(option_data)
 final_df = pd.concat(option_dfs,ignore_index=True)
 file_path = os.path.join(output_dir, "options.xlsx")
