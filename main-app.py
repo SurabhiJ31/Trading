@@ -52,7 +52,10 @@ def get_nifty50_companies():
 
 @st.cache_data
 def fetch_stock_data(symbol, period="1y"):
-    df = yf.download(symbol, period=period)
+    df = yf.download(symbol, period=period, progress=False)
+    if df.empty:
+        st.warning(f"No data returned for {symbol}. Skipping...")
+        return None
     df = df.dropna()
     df['Stock'] = symbol
     return df
@@ -67,6 +70,8 @@ def compute_summary_metrics(symbol, period="1y"):
 
     for label, days in windows.items():
         window_prices = df['Close'][-days:]
+        if len(window_prices) == 0:
+            continue
         high = float(window_prices.max())
         low = float(window_prices.min())
         curr_val = float(current_price)
@@ -160,12 +165,17 @@ with tab1:
     summary_list = []
     for company in nifty50_companies:
         df = fetch_stock_data(company+".NS")
+        if df is None or df.empty:
+            continue
         summary = compute_summary_metrics(df)
         summary_list.append(summary)
 
     
-    summary_df = pd.DataFrame(summary_list)
-    st.dataframe(summary_df)
+    if summary_list:
+        summary_df = pd.DataFrame(summary_list)
+        st.dataframe(summary_df)
+    else:
+        st.error("No valid stock data could be retrieved. Please try again later.")
 
 # --- Tab 2: Distribution View ---
 with tab2:
