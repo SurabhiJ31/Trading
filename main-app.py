@@ -50,7 +50,7 @@ def get_nifty50_companies():
         
     return companies
 
-@st.cache_data
+
 def fetch_stock_data(symbol, period="1y"):
     df = yf.download(symbol, period=period, progress=False)
     if df.empty:
