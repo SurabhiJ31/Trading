@@ -128,7 +128,7 @@ with tab3:
         create_distribution_view(prices, latest_price, latest_price_label, 
                                  f"{selected_stock} CDF - Last {label}", "Price", "Cumulative Probability", showCumulative=True)
 
-with tab4:
-    st.header("Risk - Reward Ratio")
-    option_strategy = get_option_data(nifty50_companies)
-    st.dataframe(option_strategy)
+# with tab4:
+#     st.header("Risk - Reward Ratio")
+#     option_strategy = get_option_data(nifty50_companies)
+#     st.dataframe(option_strategy)
