@@ -5,6 +5,10 @@ import pandas as pd
 from option_data_calculator import get_option_data
 from chart_generator import create_heat_map
 from chart_generator import create_distribution_view
+from importlib import reload
+import summary_metrics_creator
+
+reload(summary_metrics_creator)
 from summary_metrics_creator import create_summary_metrics
 
 #constants
