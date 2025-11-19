@@ -6,6 +6,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import os
+import numpy as np
 
 #constants
 
@@ -15,6 +16,8 @@ windows = {
     "26W": 130,  
     "52W": 260  
 }
+
+summary_df=pd.DataFrame()
 
 def create_session(url):
     session = requests.Session()
@@ -50,7 +53,7 @@ def get_nifty50_companies():
         
     return companies
 
-
+@st.cache_data
 def fetch_stock_data(symbol, period="1y"):
     df = yf.download(symbol, period=period, progress=False)
     if df.empty:
@@ -68,6 +71,11 @@ def compute_summary_metrics(symbol, period="1y"):
     
     summary = {"Stock": df['Stock'].iloc[0], "Current Price": current_price}
 
+    #7day data
+    day_close_7=float(df['Close'].iloc[-6])
+    trend_7=(current_price-day_close_7)/day_close_7
+    summary["Trend last 7 days"]=round(trend_7,2)
+
     for label, days in windows.items():
         window_prices = df['Close'][-days:]
         if len(window_prices) == 0:
@@ -76,6 +84,9 @@ def compute_summary_metrics(symbol, period="1y"):
         low = float(window_prices.min())
         curr_val = float(current_price)
         delta = (high - curr_val) / (high - low) if high != low else 0
+
+        #delta to represent 1 for high and 0 for low
+        delta =1-delta
         summary[f"{label} High"] = round(high, 2)
         summary[f"{label} Low"] = round(low, 2)
         summary[f"{label} Delta"] = round(delta, 2)
@@ -153,15 +164,20 @@ def get_bear_call_spread(df):
 
     return pd.DataFrame(results)
 
+def refresh_button_clicked():
+    st.cache_data.clear()
+
 # --- Sidebar / Tabs ---
 st.title("Nifty 50 Analysis App")
-tab1, tab2, tab3 = st.tabs(["Summary View", "Distribution View", "Risk-Reward Ratio View"])
+tab1, tab2, tab3, tab4 = st.tabs(["Summary View", "Heat-Map View", "Distribution View", "Risk-Reward Ratio View"])
 
 nifty50_companies = get_nifty50_companies()
 
 # --- Tab 1: Summary View ---
 with tab1:
     st.header("Summary Metrics for Nifty 50 Stocks")
+
+    st.button("Refresh",on_click = refresh_button_clicked)
     summary_list = []
     for company in nifty50_companies:
         df = fetch_stock_data(company+".NS")
@@ -177,8 +193,46 @@ with tab1:
     else:
         st.error("No valid stock data could be retrieved. Please try again later.")
 
-# --- Tab 2: Distribution View ---
+
+#heat map of summary
+
 with tab2:
+    st.header("Heat-Map")
+    cols_for_map=[]
+    for label, days in windows.items():
+        cols_for_map.append(f"{label} Delta")
+    cols_for_map.append("Stock")
+
+    filtered_df = summary_df[cols_for_map]
+    df_heat = filtered_df.set_index("Stock")
+
+    # Numeric matrix
+    matrix = df_heat.values.astype(float)
+    num_rows = len(df_heat)
+    row_height = 0.25 
+    fig_height = num_rows * row_height
+
+    fig, ax = plt.subplots(figsize=(6, fig_height))
+    heatmap = ax.imshow(matrix, cmap=plt.cm.get_cmap("Blues"), aspect='auto')
+
+    ax.set_xticks(np.arange(len(df_heat.columns)))
+    ax.set_yticks(np.arange(len(df_heat.index)))
+
+    ax.set_xticklabels(df_heat.columns)
+    ax.set_yticklabels(df_heat.index)
+
+    plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
+
+    # Annotate each cell with its value
+    for i in range(len(df_heat.index)):
+        for j in range(len(df_heat.columns)):
+            ax.text(j, i, matrix[i, j], ha='center', va='center', color="black")
+    
+    plt.tight_layout()
+    st.pyplot(fig)
+
+# --- Tab 3: Distribution View ---
+with tab3:
 
     st.header("Price Distribution")
     selected_stock = st.selectbox("Select Stock", nifty50_companies, key="tab2")
@@ -210,7 +264,7 @@ with tab2:
         st.pyplot(plt.gcf())
         plt.clf()
 
-with tab3:
+with tab4:
     st.header("Risk - Reward Ratio")
     file_path = os.path.join("option-data", "options.xlsx")
     all_options_df = pd.read_excel(file_path)
