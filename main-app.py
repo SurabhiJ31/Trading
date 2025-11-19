@@ -1,17 +1,11 @@
 import streamlit as st
 st.set_page_config(layout="wide")
 import yfinance as yf
-import requests
 import pandas as pd
-import seaborn as sns
-import matplotlib.pyplot as plt
-
-import numpy as np
-from io import BytesIO
-import base64
-import streamlit.components.v1 as components
-
 from option_data_calculator import get_option_data
+from chart_generator import create_heat_map
+from chart_generator import create_distribution_view
+from summary_metrics_creator import create_summary_metrics
 
 #constants
 
@@ -24,22 +18,6 @@ windows = {
 
 summary_df=pd.DataFrame()
 
-def create_session(url):
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                      "AppleWebKit/537.36 (KHTML, like Gecko) "
-                      "Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "*/*",
-        "Accept-Encoding": "gzip, deflate, br",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Referer": "https://www.nseindia.com/",
-        "Connection": "keep-alive",
-    })
-    session.get(url, timeout=10)
-    return session
-
-#@st.cache_data
 def get_nifty50_companies():
     companies = [
                 "RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK",
@@ -68,34 +46,6 @@ def fetch_stock_data(symbol, period="1y"):
     df['Stock'] = symbol
     return df
 
-def compute_summary_metrics(symbol, period="1y"):
-    
-    # -1 will get the last row which is the latest data. So current price
-    current_price = float(df['Close'].iloc[-1])
-
-    
-    summary = {"Stock": df['Stock'].iloc[0], "Current Price": current_price}
-
-    #7day data
-    day_close_7=float(df['Close'].iloc[-6])
-    trend_7=(current_price-day_close_7)/day_close_7
-    summary["Trend last 7 days"]=round(trend_7,2)
-
-    for label, days in windows.items():
-        window_prices = df['Close'][-days:]
-        if len(window_prices) == 0:
-            continue
-        high = float(window_prices.max())
-        low = float(window_prices.min())
-        curr_val = float(current_price)
-        delta = (high - curr_val) / (high - low) if high != low else 0
-
-        #delta to represent 1 for high and 0 for low
-        delta =1-delta
-        summary[f"{label} High"] = round(high, 2)
-        summary[f"{label} Low"] = round(low, 2)
-        summary[f"{label} Delta"] = round(delta, 2)
-    return summary
 
 def refresh_button_clicked():
     st.cache_data.clear()
@@ -109,16 +59,14 @@ nifty50_companies = get_nifty50_companies()
 # --- Tab 1: Summary View ---
 with tab1:
     st.header("Summary Metrics for Nifty 50 Stocks")
-
     st.button("Refresh",on_click = refresh_button_clicked)
     summary_list = []
     for company in nifty50_companies:
         df = fetch_stock_data(company+".NS")
         if df is None or df.empty:
             continue
-        summary = compute_summary_metrics(df)
+        summary = create_summary_metrics(df, windows)
         summary_list.append(summary)
-
     
     if summary_list:
         summary_df = pd.DataFrame(summary_list)
@@ -131,51 +79,10 @@ with tab1:
 
 with tab2:
     st.header("Heat-Map")
-    cols_for_map=[]
-    for label, days in windows.items():
-        cols_for_map.append(f"{label} Delta")
-    cols_for_map.append("Stock")
-
-    filtered_df = summary_df[cols_for_map]
-    df_heat = filtered_df.set_index("Stock")
-
-    # Numeric matrix
-    matrix = df_heat.values.astype(float)
-    num_rows = len(df_heat)
-    row_height = 0.25 
-    fig_height = num_rows * row_height
-
-    fig, ax = plt.subplots(figsize=(6, fig_height))
-    heatmap = ax.imshow(matrix, cmap=plt.cm.get_cmap("Blues"), vmin=0, vmax=1, aspect='auto')
-
-    ax.set_xticks(np.arange(len(df_heat.columns)))
-    ax.set_yticks(np.arange(len(df_heat.index)))
-    ax.set_xticklabels(df_heat.columns)
-    ax.set_yticklabels(df_heat.index)
-
-    plt.setp(ax.get_xticklabels(), rotation=45, ha="right")
-
-    # Annotate each cell with its value
-    for i in range(len(df_heat.index)):
-        for j in range(len(df_heat.columns)):
-            ax.text(j, i, matrix[i, j], ha='center', va='center', color="black")
-    
-    plt.tight_layout()
-
-            # Convert figure to PNG buffer
-    buf = BytesIO()
-    fig.savefig(buf, format="png", bbox_inches="tight")
-    buf.seek(0)
-    encoded = base64.b64encode(buf.read()).decode("utf-8")
-
-    # HTML scrollable container with embedded image
-    html_code = f"""
-    <div style="height:500px; overflow-y:scroll; border:1px solid #ccc; padding:10px;">
-        <img src="data:image/png;base64,{encoded}" style="width:100%; height:auto;" />
-    </div>
-    """
-
-    components.html(html_code, height=520, scrolling=False)
+    xaxis_labels=[]
+    for label, _ in windows.items():
+        xaxis_labels.append(f"{label} Delta")
+    create_heat_map(summary_df,"Stock",xaxis_labels)
 
 # --- Tab 3: Distribution View ---
 with tab3:
@@ -184,31 +91,18 @@ with tab3:
     selected_stock = st.selectbox("Select Stock", nifty50_companies, key="tab2")
     df = fetch_stock_data(selected_stock+".NS")
     latest_price = float(df['Close'].iloc[-1])
+    latest_price_label=f"Latest Price: {latest_price:.2f}"
 
     for label, days in windows.items():
         prices = df['Close'][-days:]
 
         # PDF
-        plt.figure(figsize=(10, 4))
-        sns.kdeplot(prices, fill=True, color="royalblue", alpha=0.6)
-        plt.axvline(latest_price, color="red", linestyle="--", label=f"Latest Price: {latest_price:.2f}")
-        plt.title(f"{selected_stock} PDF - Last {label}")
-        plt.xlabel("Price")
-        plt.ylabel("Density")
-        plt.legend()
-        st.pyplot(plt.gcf())
-        plt.clf()
+        create_distribution_view(prices, latest_price, latest_price_label, 
+                                 f"{selected_stock} PDF - Last {label}", "Price", "Density")
 
         # CDF
-        plt.figure(figsize=(10, 4))
-        sns.kdeplot(prices, cumulative=True, fill=True, color="green", alpha=0.5)
-        plt.axvline(latest_price, color="red", linestyle="--", label=f"Latest Price: {latest_price:.2f}")
-        plt.title(f"{selected_stock} CDF - Last {label}")
-        plt.xlabel("Price")
-        plt.ylabel("Cumulative Probability")
-        plt.legend()
-        st.pyplot(plt.gcf())
-        plt.clf()
+        create_distribution_view(prices, latest_price, latest_price_label, 
+                                 f"{selected_stock} CDF - Last {label}", "Price", "Cumulative Probability", showCumulative=True)
 
 with tab4:
     st.header("Risk - Reward Ratio")
