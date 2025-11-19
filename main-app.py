@@ -53,7 +53,7 @@ def create_summary_metrics(df,windows):
     #7day data
     day_close_7=float(df['Close'].iloc[-6])
     trend_7=((current_price-day_close_7)/day_close_7)*100
-    summary["Trend last 7 days"]=trend_7
+    summary["Trend last 7 days"]=0
 
     for label, days in windows.items():
         window_prices = df['Close'][-days:]
