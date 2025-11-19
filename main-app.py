@@ -2,6 +2,8 @@ import streamlit as st
 st.set_page_config(layout="wide")
 import yfinance as yf
 import pandas as pd
+import plotly.express as px
+from datetime import datetime, timedelta
 from option_data_calculator import get_option_data
 from chart_generator import create_heat_map
 from chart_generator import create_distribution_view
@@ -53,7 +55,7 @@ def create_summary_metrics(df,windows):
     #7day data
     day_close_7=float(df['Close'].iloc[-6])
     trend_7=((current_price-day_close_7)/day_close_7)*100
-    summary["Trend last 7 days"]=0
+    summary["Trend last 7 days"]=trend_7
 
     for label, days in windows.items():
         window_prices = df['Close'][-days:]
@@ -102,17 +104,30 @@ with tab1:
 #heat map of summary
 
 with tab2:
-    st.header("Heat-Map")
+    st.subheader("Heat-Map")
     xaxis_labels=[]
     for label, _ in windows.items():
         xaxis_labels.append(f"{label} Delta")
     create_heat_map(summary_df,"Stock",xaxis_labels)
 
+    st.subheader("Line chart")
+    selected_stock = st.selectbox("Select Stock", nifty50_companies, key="tab2key")
+    df = fetch_stock_data(selected_stock+".NS")
+    # Flatten columns if they are multi-index
+    if isinstance(df.columns, pd.MultiIndex):
+        df.columns = [' '.join(col).strip() for col in df.columns.values]
+    df.reset_index(inplace=True)
+    three_months_ago = datetime.now() - timedelta(days=90)
+    df_3m = df[df['Date'] >= three_months_ago]
+
+    fig = px.line(df_3m, x='Date', y=f'Close {selected_stock}.NS', title="Closing Price - Last 3 Months")
+    st.plotly_chart(fig, use_container_width=True)
+
 # --- Tab 3: Distribution View ---
 with tab3:
 
     st.header("Price Distribution")
-    selected_stock = st.selectbox("Select Stock", nifty50_companies, key="tab2")
+    selected_stock = st.selectbox("Select Stock", nifty50_companies, key="tab3key")
     df = fetch_stock_data(selected_stock+".NS")
     latest_price = float(df['Close'].iloc[-1])
     latest_price_label=f"Latest Price: {latest_price:.2f}"
@@ -128,7 +143,7 @@ with tab3:
         create_distribution_view(prices, latest_price, latest_price_label, 
                                  f"{selected_stock} CDF - Last {label}", "Price", "Cumulative Probability", showCumulative=True)
 
-# with tab4:
-#     st.header("Risk - Reward Ratio")
-#     option_strategy = get_option_data(nifty50_companies)
-#     st.dataframe(option_strategy)
+with tab4:
+    st.header("Risk - Reward Ratio")
+    option_strategy = get_option_data(nifty50_companies)
+    st.dataframe(option_strategy)
