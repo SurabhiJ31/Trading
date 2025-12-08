@@ -31,11 +31,11 @@ nifty500_by_industry = {
 
     "Energy": [
         "ADANIGREEN","ADANITRANS","ADANIPOWER","BPCL","GAIL","GEPIL","IOC",
-        "NTPC","ONGC","RELIANCE","TATAPOWER","TORNTPOWER","POWERGRID","COALINDIA"
+        "NTPC","ONGC","RELIANCE","TATAPOWER","TORNTPOWER","POWERGRID","COALINDIA","ADANIENSOL"
     ],
 
     "Metals & Mining": [
-        "HINDALCO","JSWSTEEL","NMDC","NATIONALUM","SAIL","TATASTEEL","VEDL","JINDALSTEL"
+        "HINDALCO","JSWSTEEL","NMDC","NATIONALUM","SAIL","TATASTEEL","VEDL","JINDALSTEL","APLAPOLLO"
     ],
 
     "Automobile & Auto Components": [
@@ -44,7 +44,7 @@ nifty500_by_industry = {
     ],
 
     "Construction": [
-        "DLF","GODREJPROP","LODHA","OBEROIRLTY","PRESTIGE","PHOENIXLTD","SOBHA","LT","ULTRACEMCO"
+        "DLF","GODREJPROP","LODHA","OBEROIRLTY","PRESTIGE","PHOENIXLTD","SOBHA","LT","ULTRACEMCO","ACC","ACE"
     ],
 
     "Capital Goods": [
@@ -82,7 +82,7 @@ nifty500_by_industry = {
     ],
 
     "Transportation": [
-        "CONCOR","DELHIVERY","BLUEDART","GATI","ALLCARGO","ADANIPORTS"
+        "CONCOR","DELHIVERY","BLUEDART","GATI","ALLCARGO","ADANIPORTS","3MINDIA"
     ]
 }
 
@@ -149,3 +149,21 @@ def get_industry(company):
     if len(keys) ==0:
         return ""
     return keys[0]
+
+def get_nifty50_companies():
+    companies = [
+                "RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK",
+                "ITC", "LT", "SBIN", "BHARTIARTL", "HINDUNILVR",
+                "ASIANPAINT", "AXISBANK", "KOTAKBANK", "BAJFINANCE",
+                "ADANIENT", "ADANIPORTS", "SUNPHARMA", "HCLTECH",
+                "ULTRACEMCO", "TITAN", "WIPRO", "ONGC", "MARUTI",
+                "POWERGRID", "NTPC", "TATAMOTORS", "JSWSTEEL",
+                "TATASTEEL", "BAJAJFINSV", "NESTLEIND", "TECHM",
+                "COALINDIA", "GRASIM", "SBILIFE", "HDFCLIFE",
+                "DRREDDY", "BRITANNIA", "CIPLA", "EICHERMOT",
+                "HEROMOTOCO", "TATACONSUM", "INDUSINDBK", "APOLLOHOSP",
+                "BPCL", "BAJAJ-AUTO", "DIVISLAB", "HINDALCO",
+                "ADANIGREEN", "ADANIPOWER", "DABUR", "SHRIRAMFIN"
+            ]
+        
+    return companies

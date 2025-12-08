@@ -26,23 +26,7 @@ windows = {
 
 summary_df=pd.DataFrame()
 
-def get_nifty50_companies():
-    companies = [
-                "RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK",
-                "ITC", "LT", "SBIN", "BHARTIARTL", "HINDUNILVR",
-                "ASIANPAINT", "AXISBANK", "KOTAKBANK", "BAJFINANCE",
-                "ADANIENT", "ADANIPORTS", "SUNPHARMA", "HCLTECH",
-                "ULTRACEMCO", "TITAN", "WIPRO", "ONGC", "MARUTI",
-                "POWERGRID", "NTPC", "TATAMOTORS", "JSWSTEEL",
-                "TATASTEEL", "BAJAJFINSV", "NESTLEIND", "TECHM",
-                "COALINDIA", "GRASIM", "SBILIFE", "HDFCLIFE",
-                "DRREDDY", "BRITANNIA", "CIPLA", "EICHERMOT",
-                "HEROMOTOCO", "TATACONSUM", "INDUSINDBK", "APOLLOHOSP",
-                "BPCL", "BAJAJ-AUTO", "DIVISLAB", "HINDALCO",
-                "ADANIGREEN", "ADANIPOWER", "DABUR", "SHRIRAMFIN"
-            ]
-        
-    return companies
+
 
 @st.cache_data
 def fetch_stock_data(symbol, period="1y"):
@@ -121,16 +105,16 @@ def get_summary(stockSymbol):
 st.title("Nifty 50 Analysis App")
 tab1, tab2, tab3, tab4, tab5 = st.tabs(["Summary View", "Heat-Map View", "Distribution View", "Risk-Reward Ratio View", "Insights"])
 
-nifty50_companies = get_nifty50_companies()
+
 nifty_companies = get_companies()
 
 # --- Tab 1: Summary View ---
 with tab1:
-    st.header("Summary Metrics for Nifty 50 Stocks")
+    st.header("Summary Metrics for Nifty 500 Stocks")
     st.button("Refresh",on_click = refresh_button_clicked)
     summary_list = []
-    with ThreadPoolExecutor(max_workers=10) as executor:
-        futures = [executor.submit(get_summary, company) for company in nifty50_companies]
+    with ThreadPoolExecutor(max_workers=30) as executor:
+        futures = [executor.submit(get_summary, company) for company in nifty_companies]
 
         for f in as_completed(futures):
             if f.result() is not None:
@@ -185,6 +169,6 @@ with tab3:
 
 with tab4:
     st.header("Risk - Reward Ratio")
-    option_strategy = get_option_data(nifty50_companies)
+    option_strategy = get_option_data(nifty_companies)
     st.dataframe(option_strategy)
 
