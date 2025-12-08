@@ -6,3 +6,5 @@ seaborn
 scipy
 openpyxl
 plotly
+numerize
+nsefin
