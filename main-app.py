@@ -10,11 +10,12 @@ from datetime import datetime, timedelta
 from option_data_calculator import get_option_data
 from chart_generator import create_heat_map
 from chart_generator import create_distribution_view
-from companies import get_companies
-from companies import get_industry
+from companies import get_companies, get_industry,get_nifty50_companies
 from concurrent.futures import as_completed, ThreadPoolExecutor
 from numerize import numerize
 from fno import has_fno
+from ai_insights import get_insights
+import asyncio
 #constants
 
 # 12weeks*5 days=60 (stock market is open for 5 days in a week)
@@ -171,4 +172,8 @@ with tab4:
     st.header("Risk - Reward Ratio")
     option_strategy = get_option_data(nifty_companies)
     st.dataframe(option_strategy)
+
+with tab5:
+    st.header("Market Insights")
+    get_insights()
 
