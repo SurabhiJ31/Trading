@@ -508,11 +508,6 @@ stocks = {
 def get_company_symbols():
     return stocks.keys()
 
-
-
-
-
-
 @st.cache_data
 def get_industry(company):
     return stocks[company]['industry']
