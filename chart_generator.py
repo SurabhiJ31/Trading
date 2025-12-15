@@ -6,6 +6,8 @@ import streamlit.components.v1 as components
 import seaborn as sns
 import streamlit as st
 
+import plotly.express as px
+
 def create_heat_map(input_df, yaxis_label, xaxis_labels):
     all_axis_labels = []
     all_axis_labels.append(yaxis_label)
@@ -63,3 +65,7 @@ def create_distribution_view(data, current_data, current_data_label,title, xlabe
     plt.legend()
     st.pyplot(plt.gcf())
     plt.clf()
+
+def create_line_chart(df):
+    fig = px.line(df, x='Date', y=f'Close', title="Closing Price - Last 3 Months")
+    st.plotly_chart(fig, use_container_width=True)

@@ -5,11 +5,12 @@ import os
 from openai import OpenAI
 import requests
 import streamlit as st
-from companies import get_nifty50_companies
+from companies import get_company_symbols, get_company_name
 
-companies = get_nifty50_companies()
+companies = get_company_symbols()
 def get_insights():
-    company_name =ticker = st.selectbox("Stock",companies)
+    ticker = st.selectbox("Stock",companies)
+    company_name = get_company_name(ticker)
     lookback_days = st.slider("Days to analyze", min_value=0, max_value=100, value=10)
     proceed = st.button("Get sentiment score", key="sentiment")
     if proceed:
@@ -38,7 +39,7 @@ def fetch_company_news(
     language: str = "en",
 ) -> List[Dict[str, Any]]:
     """Fetch company news via NewsAPI (needs NEWSAPI_KEY)."""
-    api_key = os.getenv("NEWSAPI_KEY")
+    api_key = st.secrets["NEWSAPI_KEY"]
     if not api_key:
         return []
 
@@ -173,7 +174,7 @@ def generate_market_analysis(
     
 @st.cache_resource(show_spinner=False)
 def get_openai_client() -> Dict[str, Any]:
-    api_key = os.getenv("OPENAI_API_KEY")
+    api_key = st.secrets["OPENAI_API_KEY"].replace("\n", "")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY environment variable is required.")
 
