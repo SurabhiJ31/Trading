@@ -1,34 +1,46 @@
 from datetime import datetime, timedelta
 import json
-from typing import List,Dict,Any
+from typing import List, Dict, Any
 import os
+from fno import get_companies_with_fno
+import pandas as pd
 from openai import OpenAI
 import requests
 import streamlit as st
 from companies import get_company_symbols, get_company_name
 
 companies = get_company_symbols()
-def get_insights():
-    ticker = st.selectbox("Stock",companies)
-    company_name = get_company_name(ticker)
-    lookback_days = st.slider("Days to analyze", min_value=0, max_value=100, value=10)
-    proceed = st.button("Get sentiment score", key="sentiment")
-    if proceed:
-        end_date = datetime.now()
-        start_date = end_date - timedelta(days=lookback_days)
-        articles = fetch_company_news(company_name or ticker, start_date, end_date)
-        if not articles:
-            st.warning(
-                "No news articles were fetched. Provide a NEWSAPI_KEY env var for richer context."
-            )
-        else:
-            analysis = generate_market_analysis(ticker, company_name, articles)
 
-            if "error" in analysis:
-                st.error(analysis["error"])
+
+def get_insights():
+    single_tab, batch_tab = st.tabs(["Single stock", "Batch (list)"])
+
+    with single_tab:
+        ticker = st.selectbox("Stock", companies, key="insights_single_ticker")
+        company_name = get_company_name(ticker)
+        lookback_days = st.slider(
+            "Days to analyze", min_value=1, max_value=100, value=10, key="insights_single_lookback"
+        )
+        proceed = st.button("Get sentiment score", key="sentiment_single")
+        if proceed:
+            end_date = datetime.now()
+            start_date = end_date - timedelta(days=lookback_days)
+            articles = fetch_company_news(company_name or ticker, start_date, end_date)
+            if not articles:
+                st.warning(
+                    "No news articles were fetched. Provide a NEWSAPI_KEY secret for richer context."
+                )
             else:
-                insights = analysis.get("insights", [])
-                render_market_insights(insights)
+                analysis = generate_market_analysis(ticker, company_name, articles)
+
+                if "error" in analysis:
+                    st.error(analysis["error"])
+                else:
+                    insights = analysis.get("insights", [])
+                    render_market_insights(insights)
+
+    with batch_tab:
+        render_batch_insights()
 
 
 @st.cache_data(show_spinner=False)
@@ -171,7 +183,24 @@ def generate_market_analysis(
         return parsed
     except json.JSONDecodeError:
         return {"error": "Unable to parse analysis output."}
-    
+
+
+@st.cache_data(show_spinner=False)
+def get_company_sentiment_cached(
+    ticker: str,
+    company_name: str,
+    anchor_date: datetime.date,
+    lookback_days: int,
+) -> Dict[str, Any]:
+    end_date = datetime.combine(anchor_date, datetime.max.time())
+    start_date = end_date - timedelta(days=lookback_days)
+    articles = fetch_company_news(company_name or ticker, start_date, end_date)
+    if not articles:
+        return {}
+
+    return generate_market_analysis(ticker, company_name, articles)
+
+
 @st.cache_resource(show_spinner=False)
 def get_openai_client() -> Dict[str, Any]:
     api_key = st.secrets["OPENAI_API_KEY"].replace("\n", "")
@@ -205,3 +234,118 @@ def render_market_insights(insights: List[Dict[str, Any]]) -> None:
                 if title and url:
                     st.markdown(f"- [{title}]({url}))")
         st.divider()
+
+
+def render_batch_insights() -> None:
+
+    selected_companies = get_companies_with_fno()
+    if not selected_companies:
+        st.info("No F&O companies available for batch analysis.")
+        return
+
+    total = len(selected_companies)
+    page_size = st.selectbox(
+        "Companies per page",
+        options=[2,10, 25, 50, 100],
+        index=1 if total >= 50 else 0,
+        key="insights_batch_page_size",
+    )
+
+    total_pages = max(1, (total + page_size - 1) // page_size)
+    if "insights_batch_page" not in st.session_state:
+        st.session_state["insights_batch_page"] = 1
+
+    col_prev, col_info, col_next = st.columns([1, 2, 1])
+    with col_prev:
+        if st.button("◀ Previous"):
+            st.session_state["insights_batch_page"] = max(
+                1, st.session_state["insights_batch_page"] - 1
+            )
+    with col_next:
+        if st.button("Next ▶"):
+            st.session_state["insights_batch_page"] = min(
+                total_pages, st.session_state["insights_batch_page"] + 1
+            )
+    with col_info:
+        st.markdown(
+            f"<div style='text-align:center;'>Page {st.session_state['insights_batch_page']} of {total_pages}</div>",
+            unsafe_allow_html=True,
+        )
+
+    page = st.session_state["insights_batch_page"]
+
+    start_idx = (page - 1) * page_size
+    end_idx = min(start_idx + page_size, total)
+    companies_to_analyze = selected_companies[start_idx:end_idx]
+
+    st.caption(f"Showing companies {start_idx + 1}–{end_idx} of {total}.")
+
+    lookback_days = 10
+    proceed = st.button("Run batch sentiment analysis", key="sentiment_batch")
+
+    # Prepare meta to detect when we need to recompute
+    current_meta = {
+        "anchor_date": str(datetime.now().date()),
+        "lookback_days": lookback_days,
+        "page_size": page_size,
+        "companies": tuple(selected_companies),
+    }
+
+    # Initialize cache structure
+    cache = st.session_state.get("insights_batch_cache", {"meta": None, "rows": {}})
+    cached_meta = cache.get("meta")
+
+    # If user hit Run or inputs changed, reset cache meta (rows kept but considered stale)
+    if proceed or cached_meta != current_meta:
+        cache = {"meta": current_meta, "rows": {}}
+
+    # Fetch only for companies on the current page that are missing in cache
+    missing = [c for c in companies_to_analyze if c not in cache["rows"]]
+    if missing:
+        anchor_date = datetime.now().date()
+        with st.spinner("Analyzing sentiment for selected companies..."):
+            for ticker in missing:
+                company_name = get_company_name(ticker)
+                analysis = get_company_sentiment_cached(
+                    ticker, company_name, anchor_date, lookback_days
+                )
+                if "error" in analysis or not analysis:
+                    cache["rows"][ticker] = {
+                        "Ticker": ticker,
+                        "Company": company_name or ticker,
+                        "Sentiment Score (0-1)": "N/A",
+                        "Reason": "No recent news or analysis available for this period.",
+                    }
+                    continue
+
+                insights = analysis.get("insights", [])
+                if not insights:
+                    cache["rows"][ticker] = {
+                        "Ticker": ticker,
+                        "Company": company_name or ticker,
+                        "Sentiment Score (0-1)": "N/A",
+                        "Reason": "No insights returned by the analysis.",
+                    }
+                    continue
+
+                top = insights[0]
+                cache["rows"][ticker] = {
+                    "Ticker": ticker,
+                    "Company": company_name or ticker,
+                    "Sentiment Score (0-1)": top.get("sentiment_score"),
+                    "Reason": top.get("reason"),
+                }
+        cache["meta"] = current_meta
+        st.session_state["insights_batch_cache"] = cache
+
+    page_rows = [cache["rows"][c] for c in companies_to_analyze if c in cache["rows"]]
+    if not page_rows:
+        st.info("No insights for this page. Run batch or check data availability.")
+        return
+
+    df_page = pd.DataFrame(page_rows)
+    st.dataframe(
+            df_page.sort_values("Sentiment Score (0-1)", ascending=False),
+            use_container_width=True,
+        )
+        
