@@ -7,16 +7,16 @@ import pandas as pd
 from openai import OpenAI
 import requests
 import streamlit as st
-from companies import get_company_symbols, get_company_name
+from companies import get_company_name
 
-companies = get_company_symbols()
+selected_companies = get_companies_with_fno()
 
 
 def get_insights():
     single_tab, batch_tab = st.tabs(["Single stock", "Batch (list)"])
 
     with single_tab:
-        ticker = st.selectbox("Stock", companies, key="insights_single_ticker")
+        ticker = st.selectbox("Stock", selected_companies, key="insights_single_ticker")
         company_name = get_company_name(ticker)
         lookback_days = st.slider(
             "Days to analyze", min_value=1, max_value=100, value=10, key="insights_single_lookback"
@@ -40,7 +40,8 @@ def get_insights():
                     render_market_insights(insights)
 
     with batch_tab:
-        render_batch_insights()
+        #render_batch_insights()
+        st.write("Disabled for now to avoid rate limit. buy me a coffee to enable this")
 
 
 @st.cache_data(show_spinner=False)
@@ -54,7 +55,6 @@ def fetch_company_news(
     api_key = st.secrets["NEWSAPI_KEY"]
     if not api_key:
         return []
-
     params = {
         "q": query,
         "from": from_date.strftime("%Y-%m-%d"),
@@ -238,7 +238,7 @@ def render_market_insights(insights: List[Dict[str, Any]]) -> None:
 
 def render_batch_insights() -> None:
 
-    selected_companies = get_companies_with_fno()
+    
     if not selected_companies:
         st.info("No F&O companies available for batch analysis.")
         return
@@ -345,7 +345,6 @@ def render_batch_insights() -> None:
 
     df_page = pd.DataFrame(page_rows)
     st.dataframe(
-            df_page.sort_values("Sentiment Score (0-1)", ascending=False),
-            use_container_width=True,
+            df_page.sort_values("Sentiment Score (0-1)", ascending=False)
         )
         
