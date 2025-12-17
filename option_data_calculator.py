@@ -79,9 +79,13 @@ def get_option_data(companies):
     selected_stock = st.selectbox("Select Stock", companies, key="tab3")
     option_type = st.selectbox("Option Type", ["PUT", "CALL"])
     
-    stock_options_df = all_options_df[(all_options_df['Company']==selected_stock) & (all_options_df['Type']==option_type)]
-    expiryDates = stock_options_df['Expiry Date'].unique()
-    selected_expiry_Date = st.selectbox("Select Expiry Date", expiryDates) 
-    stock_options_df = stock_options_df[stock_options_df["Expiry Date"]==selected_expiry_Date]
-    option_strategy = get_option_spread(stock_options_df,option_type)
-    return option_strategy
+
+    if len(all_options_df)>0:
+    
+        stock_options_df = all_options_df[(all_options_df['Company']==selected_stock) & (all_options_df['Type']==option_type)]
+        expiryDates = stock_options_df['Expiry Date'].unique()
+        selected_expiry_Date = st.selectbox("Select Expiry Date", expiryDates) 
+        stock_options_df = stock_options_df[stock_options_df["Expiry Date"]==selected_expiry_Date]
+        option_strategy = get_option_spread(stock_options_df,option_type)
+        return option_strategy
+    return None

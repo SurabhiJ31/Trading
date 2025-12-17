@@ -11,6 +11,7 @@ from companies import get_company_symbols, get_nifty50_companies
 from ai_insights import get_insights
 from stock_info_generator import get_summary, get_distribution, get_heat_map
 from option_data_calculator import get_option_data
+
 #constants
 
 
@@ -87,7 +88,10 @@ with tab4:
     st.header("Risk - Reward Ratio")
     nifty_companies = get_nifty50_companies()
     option_strategy = get_option_data(nifty_companies)
-    st.dataframe(option_strategy)
+    if option_strategy is None:
+        st.text("No data")
+    else:    
+     st.dataframe(option_strategy)
 
 with tab5:
     st.header("Market Insights")
