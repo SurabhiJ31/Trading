@@ -9,7 +9,3 @@ plotly
 numerize
 nsefin
 openai
-aynse
-appdirs
-httpx
-h2

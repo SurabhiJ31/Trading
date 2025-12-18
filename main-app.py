@@ -11,7 +11,6 @@ from companies import get_company_symbols, get_nifty50_companies
 from ai_insights import get_insights
 from stock_info_generator import get_summary, get_distribution, get_heat_map
 from option_data_calculator import get_option_data
-from aynse import NSELive
 
 
 
@@ -96,10 +95,5 @@ with tab5:
     st.header("Market Insights")
     get_insights()
 
-with tab6:
-    live = NSELive()
-    data = live.equities_option_chain("RELIANCE")
-    a =data['records']['underlyingValue']
-    st.write(f"a {a}")
 
 
