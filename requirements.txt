@@ -11,4 +11,5 @@ nsefin
 openai
 aynse
 appdirs
-httpx[http2]
+httpx
+h2
