@@ -8,4 +8,6 @@ openpyxl
 plotly
 numerize
 nsefin
-openai 
+openai
+aynse
+appdirs
