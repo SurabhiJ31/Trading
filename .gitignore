@@ -14,3 +14,9 @@ __pycache__/chart_generator.cpython-314.pyc
 __pycache__/fno.cpython-314.pyc
 __pycache__/ai_insights.cpython-314.pyc
 __pycache__/actual_insights.cpython-314.pyc
+actual_insights.py
+insights.py
+stock_info_generator.py
+__pycache__/option_data_calculator.cpython-314.pyc
+__pycache__/stock_info_generator.cpython-314.pyc
+msp-server/server.py
