@@ -11,8 +11,7 @@ from companies import get_company_symbols, get_nifty50_companies
 from ai_insights import get_insights
 from stock_info_generator import get_summary, get_distribution, get_heat_map
 from option_data_calculator import get_option_data
-
-#constants
+from aynse import NSELive
 
 
 
@@ -56,8 +55,8 @@ st.markdown('<div class="app-title">Nifty Analysis Pro</div>', unsafe_allow_html
 st.markdown('<div class="app-subtitle">Multi-view market snapshot for Nifty 500</div>', unsafe_allow_html=True)
 
 # --- Tabs ---
-tab1, tab2, tab3, tab4, tab5 = st.tabs(
-    ["📈 Summary", "🌡️ Heat-Map", "📊 Distribution", "⚖️ Risk-Reward", "🧠 Insights"]
+tab1, tab2, tab3, tab4, tab5,tab6 = st.tabs(
+    ["📈 Summary", "🌡️ Heat-Map", "📊 Distribution", "⚖️ Risk-Reward", "🧠 Insights","TEST"]
 )
 
 
@@ -96,4 +95,11 @@ with tab4:
 with tab5:
     st.header("Market Insights")
     get_insights()
+
+with tab6:
+    live = NSELive()
+    data = live.equities_option_chain("RELIANCE")
+    a =data['records']['underlyingValue']
+    st.write(f"a {a}")
+
 
