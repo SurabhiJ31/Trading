@@ -9,7 +9,7 @@ st.set_page_config(
 import pandas as pd
 from companies import get_company_symbols, get_nifty50_companies
 from ai_insights import get_insights
-from stock_info_generator import get_summary, get_distribution, get_heat_map
+from stock_info_generator import get_summary, get_distribution, get_heat_map, get_mohit_data
 from option_data_calculator import get_option_data
 
 
@@ -59,7 +59,8 @@ tab1, tab2, tab3, tab4, tab5,tab6 = st.tabs(
 )
 
 
-
+def get_moving_average(series, days):
+    return series.rolling(window=days).mean()
 
 # --- Tab 1: Summary View ---
 with tab1:
@@ -94,6 +95,9 @@ with tab4:
 with tab5:
     st.header("Market Insights")
     get_insights()
+
+with tab6:
+    st.dataframe(get_mohit_data())
 
 
 

@@ -6,6 +6,7 @@ from companies import get_company_symbols, get_industry
 from fno import has_fno
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from chart_generator import create_distribution_view, create_heat_map, create_line_chart
+from ta.momentum import RSIIndicator
 
 windows = {
     "12W": 60,   
@@ -68,6 +69,14 @@ def get_trend(df,days,current_price):
     trend=((current_price-day_close)/day_close)*100
     return trend
 
+def get_moving_average(series, days):
+    return float(series.tail(days).mean())
+
+def get_rsi(series,days):
+    rsi = RSIIndicator(series, window=days).rsi()
+    return round(rsi.iloc[-1], 2)
+
+
 def build_summaries(all_data, fundamentals=None):
     summaries = []
     fundamentals = fundamentals or {}
@@ -95,6 +104,30 @@ def build_summaries(all_data, fundamentals=None):
             summary[f"{label} Delta"] = round(delta, 2)
         summaries.append(summary)
     return pd.DataFrame(summaries)
+
+def get_computed_date(all_data):
+    infos=[]
+    for s, df in all_data.items():
+        if has_fno(s):
+            close_series = df["Close"]
+            if isinstance(close_series, pd.DataFrame):
+                close_series = close_series.iloc[:, 0]
+            current = float(close_series.iloc[-1])
+            info = {"Stock": s,
+                   "Current Price": current,
+                   "MA - 14D": get_moving_average(close_series,14),
+                   "MA - 30D": get_moving_average(close_series,30),
+                   "MA - 60D": get_moving_average(close_series,60),
+                   "RSI - 14D": get_rsi(close_series,14),
+                   "RSI - 30D": get_rsi(close_series,30),
+                   "RSI - 60D": get_rsi(close_series,60)}
+            infos.append(info)
+    return pd.DataFrame(infos)
+            
+
+
+
+
 
 
 @st.cache_data(show_spinner=False, ttl=3600)
@@ -124,6 +157,14 @@ def get_summary():
     fundamentals = fetch_fundamentals()
     summaries_df = build_summaries(all_data, fundamentals)
     return all_data, summaries_df
+
+@st.cache_data(show_spinner=False, ttl=900)
+def get_mohit_data():
+    all_data = get_stock_data()
+    return get_computed_date(all_data)
+
+
+
 
 
 def get_distribution(stock):
