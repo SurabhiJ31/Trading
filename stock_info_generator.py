@@ -121,9 +121,9 @@ def get_computed_date(all_data):
                    "MA - 14D": ma_14,
                    "MA - 30D": ma_30,
                    "MA - 60D": ma_60,
-                   "% change - 14D": round(((current-ma_14)/current),2),
-                   "% change - 30D": round(((current-ma_30)/current),2),
-                   "% change - 60D": round(((current-ma_60)/current),2),
+                   "percent change - 14D": round(((current-ma_14)/current),2),
+                   "percent change - 30D": round(((current-ma_30)/current),2),
+                   "percent change - 60D": round(((current-ma_60)/current),2),
                    "RSI - 14D": get_rsi(close_series,14),
                    "RSI - 30D": get_rsi(close_series,30),
                    "RSI - 60D": get_rsi(close_series,60)}
