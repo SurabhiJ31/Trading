@@ -115,7 +115,7 @@ with tab6:
 
     # Apply % change filter
     pct_col = f"% change - {pct_window}"
-    #df_filtered = df_filtered[df_filtered[pct_col] <= pct_change_max]
+    df_filtered = df_filtered[df_filtered[pct_col] <= pct_change_max]
     st.dataframe(df_filtered)
 
 
