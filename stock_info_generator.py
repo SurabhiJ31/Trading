@@ -70,7 +70,7 @@ def get_trend(df,days,current_price):
     return trend
 
 def get_moving_average(series, days):
-    return float(series.tail(days).mean())
+    return round(float(series.tail(days).mean()),2)
 
 def get_rsi(series,days):
     rsi = RSIIndicator(series, window=days).rsi()
@@ -113,11 +113,17 @@ def get_computed_date(all_data):
             if isinstance(close_series, pd.DataFrame):
                 close_series = close_series.iloc[:, 0]
             current = float(close_series.iloc[-1])
+            ma_14=get_moving_average(close_series,14)
+            ma_30=get_moving_average(close_series,30)
+            ma_60=get_moving_average(close_series,60)
             info = {"Stock": s,
                    "Current Price": current,
-                   "MA - 14D": get_moving_average(close_series,14),
-                   "MA - 30D": get_moving_average(close_series,30),
-                   "MA - 60D": get_moving_average(close_series,60),
+                   "MA - 14D": ma_14,
+                   "MA - 30D": ma_30,
+                   "MA - 60D": ma_60,
+                   "% change - 14D": round(((current-ma_14)/current),2),
+                   "% change - 30D": round(((current-ma_30)/current),2),
+                   "% change - 60D": round(((current-ma_60)/current),2),
                    "RSI - 14D": get_rsi(close_series,14),
                    "RSI - 30D": get_rsi(close_series,30),
                    "RSI - 60D": get_rsi(close_series,60)}
@@ -162,6 +168,7 @@ def get_summary():
 def get_mohit_data():
     all_data = get_stock_data()
     return get_computed_date(all_data)
+    
 
 
 

@@ -97,7 +97,26 @@ with tab5:
     get_insights()
 
 with tab6:
-    st.dataframe(get_mohit_data())
+    comp_df = get_mohit_data()
+
+    col1, col2, col3, col4 = st.columns(4)
+
+    # RSI Window
+    rsi_window = col1.selectbox("RSI Window", ["14D", "30D", "60D"], index=0)
+    # RSI range
+    rsi_min, rsi_max = col2.slider("RSI Range", 0, 100, (30, 70))
+
+    # % Change Window
+    pct_window = col3.selectbox("% Change Window", ["14D", "30D", "60D"], index=0)
+    # % Change max
+    pct_change_max = col4.slider("% Change ≤ ", -0.5, 0.5, -0.01, step=0.01, format="%.2f")
+    rsi_col = f"RSI - {rsi_window}"
+    df_filtered = comp_df[comp_df[rsi_col].between(rsi_min, rsi_max)]
+
+    # Apply % change filter
+    pct_col = f"% change - {pct_window}"
+    df_filtered = df_filtered[df_filtered[pct_col] <= pct_change_max]
+    st.dataframe(df_filtered)
 
 
 
