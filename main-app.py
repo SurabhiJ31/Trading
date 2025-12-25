@@ -109,13 +109,13 @@ with tab6:
     # % Change Window
     pct_window = col3.selectbox("% Change Window", ["14D", "30D", "60D"], index=0)
     # % Change max
-    pct_change_max = col4.slider("% Change ≤ ", -0.5, 0.5, -0.01, step=0.01, format="%.2f")
+    #pct_change_max = col4.slider("% Change ≤ ", -0.5, 0.5, -0.01, step=0.01, format="%.2f")
     rsi_col = f"RSI - {rsi_window}"
     df_filtered = comp_df[comp_df[rsi_col].between(rsi_min, rsi_max)]
 
     # Apply % change filter
-    pct_col = f"% change - {pct_window}"
-    df_filtered = df_filtered[df_filtered[pct_col] <= pct_change_max]
+    #pct_col = f"% change - {pct_window}"
+    #df_filtered = df_filtered[df_filtered[pct_col] <= pct_change_max]
     st.dataframe(df_filtered)
 
 
