@@ -40,8 +40,16 @@ def get_insights():
                     render_market_insights(insights)
 
     with batch_tab:
-        #render_batch_insights()
-        st.write("Disabled for now to avoid rate limit. buy me a coffee to enable this")
+        uploaded_file = st.file_uploader("Upload CSV file",type=["csv"])
+        if uploaded_file is not None:
+            ip_file = pd.read_csv(uploaded_file)
+
+            if "Stock" not in ip_file.columns:
+                st.error("CSV must contain a column named 'Stock'")
+            else:
+                stock_list = ip_file["Stock"].dropna().astype(str).tolist()
+                render_batch_insights(stock_list)
+        #st.write("Disabled for now to avoid rate limit. buy me a coffee to enable this")
 
 
 @st.cache_data(show_spinner=False)
@@ -236,14 +244,14 @@ def render_market_insights(insights: List[Dict[str, Any]]) -> None:
         st.divider()
 
 
-def render_batch_insights() -> None:
+def render_batch_insights(input_companies) -> None:
 
     
-    if not selected_companies:
+    if not input_companies:
         st.info("No F&O companies available for batch analysis.")
         return
 
-    total = len(selected_companies)
+    total = len(input_companies)
     page_size = st.selectbox(
         "Companies per page",
         options=[2,10, 25, 50, 100],
@@ -276,7 +284,7 @@ def render_batch_insights() -> None:
 
     start_idx = (page - 1) * page_size
     end_idx = min(start_idx + page_size, total)
-    companies_to_analyze = selected_companies[start_idx:end_idx]
+    companies_to_analyze = input_companies[start_idx:end_idx]
 
     st.caption(f"Showing companies {start_idx + 1}–{end_idx} of {total}.")
 
@@ -288,7 +296,7 @@ def render_batch_insights() -> None:
         "anchor_date": str(datetime.now().date()),
         "lookback_days": lookback_days,
         "page_size": page_size,
-        "companies": tuple(selected_companies),
+        "companies": tuple(input_companies),
     }
 
     # Initialize cache structure
