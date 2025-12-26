@@ -99,23 +99,44 @@ with tab5:
 with tab6:
     comp_df = get_mohit_data()
 
-    col1, col2, col3, col4 = st.columns(4)
+    rsi_cols = ["RSI - 14D", "RSI - 30D", "RSI - 60D"]
+    rsi_ranges = {}
+    rsi_cols_layout = st.columns(3)
+    for i, col in enumerate(rsi_cols):
+        rsi_min, rsi_max = rsi_cols_layout[i].slider(
+            f"{col} range",
+            min_value=0,
+            max_value=100,
+            value=(30, 70)
+        )
+        rsi_ranges[col] = (rsi_min, rsi_max)
 
-    # RSI Window
-    rsi_window = col1.selectbox("RSI Window", ["14D", "30D", "60D"], index=0)
-    # RSI range
-    rsi_min, rsi_max = col2.slider("RSI Range", 0, 100, (30, 70))
+    pct_cols = ["percent change - 14D", "percent change - 30D", "percent change - 60D"]
+    pct_ranges = {}
+    pct_cols_layout = st.columns(3)
+    for i, col in enumerate(pct_cols):
+        pct_min, pct_max = pct_cols_layout[i].slider(
+            f"{col} range",
+            min_value=-1.0,
+            max_value=1.0,
+            value=(-0.05, 0.05),
+            step=0.01,
+            format="%.2f"
+        )
+        pct_ranges[col] = (pct_min, pct_max)
 
-    # % Change Window
-    pct_window = col3.selectbox("% Change Window", ["14D", "30D", "60D"], index=0)
-    # % Change max
-    pct_change_max = col4.slider("% Change ≤ ", -0.5, 0.5, -0.01, step=0.01, format="%.2f")
-    rsi_col = f"RSI - {rsi_window}"
-    df_filtered = comp_df[comp_df[rsi_col].between(rsi_min, rsi_max)]
+    # --- Apply Filters ---
+    df_filtered = comp_df.copy()
 
-    # Apply % change filter
-    pct_col = f"percent change - {pct_window}"
-    df_filtered = df_filtered[df_filtered[pct_col] <= pct_change_max]
+    for col, (min_v, max_v) in rsi_ranges.items():
+        if col in df_filtered.columns:
+            df_filtered = df_filtered[df_filtered[col].between(min_v, max_v)]
+
+    for col, (min_v, max_v) in pct_ranges.items():
+        if col in df_filtered.columns:
+            df_filtered = df_filtered[df_filtered[col].between(min_v, max_v)]
+
+    
     st.dataframe(df_filtered)
 
 
