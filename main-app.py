@@ -99,17 +99,17 @@ with tab5:
 with tab6:
     comp_df = get_mohit_data()
 
-    # rsi_cols = ["RSI - 14D", "RSI - 30D", "RSI - 60D"]
-    # rsi_ranges = {}
-    # rsi_cols_layout = st.columns(3)
-    # for i, col in enumerate(rsi_cols):
-    #     rsi_min, rsi_max = rsi_cols_layout[i].slider(
-    #         f"{col} range",
-    #         min_value=0,
-    #         max_value=100,
-    #         value=(30, 70)
-    #     )
-    #     rsi_ranges[col] = (rsi_min, rsi_max)
+    rsi_cols = ["RSI - 14D", "RSI - 30D", "RSI - 60D"]
+    rsi_ranges = {}
+    rsi_cols_layout = st.columns(3)
+    for i, col in enumerate(rsi_cols):
+        rsi_min, rsi_max = rsi_cols_layout[i].slider(
+            f"{col} range",
+            min_value=0,
+            max_value=100,
+            value=(30, 70)
+        )
+        rsi_ranges[col] = (rsi_min, rsi_max)
 
     # pct_cols = ["percent change - 14D", "percent change - 30D", "percent change - 60D"]
     # pct_ranges = {}
@@ -126,18 +126,18 @@ with tab6:
     #     pct_ranges[col] = (pct_min, pct_max)
 
     # # --- Apply Filters ---
-    # df_filtered = comp_df.copy()
+        df_filtered = comp_df.copy()
 
-    # for col, (min_v, max_v) in rsi_ranges.items():
-    #     if col in df_filtered.columns:
-    #         df_filtered = df_filtered[df_filtered[col].between(min_v, max_v)]
+    for col, (min_v, max_v) in rsi_ranges.items():
+        if col in df_filtered.columns:
+            df_filtered = df_filtered[df_filtered[col].between(min_v, max_v)]
 
     # for col, (min_v, max_v) in pct_ranges.items():
     #     if col in df_filtered.columns:
     #         df_filtered = df_filtered[df_filtered[col].between(min_v, max_v)]
 
     
-    st.dataframe(comp_df)
+    st.dataframe(df_filtered)
 
 
 
