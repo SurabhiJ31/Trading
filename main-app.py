@@ -111,19 +111,19 @@ with tab6:
         )
         rsi_ranges[col] = (rsi_min, rsi_max)
 
-    # pct_cols = ["percent change - 14D", "percent change - 30D", "percent change - 60D"]
-    # pct_ranges = {}
-    # pct_cols_layout = st.columns(3)
-    # for i, col in enumerate(pct_cols):
-    #     pct_min, pct_max = pct_cols_layout[i].slider(
-    #         f"{col} range",
-    #         min_value=-1.0,
-    #         max_value=1.0,
-    #         value=(-0.05, 0.05),
-    #         step=0.01,
-    #         format="%.2f"
-    #     )
-    #     pct_ranges[col] = (pct_min, pct_max)
+    pct_cols = ["percent change - 14D", "percent change - 30D", "percent change - 60D"]
+    pct_ranges = {}
+    pct_cols_layout = st.columns(3)
+    for i, col in enumerate(pct_cols):
+        pct_min, pct_max = pct_cols_layout[i].slider(
+            f"{col} range",
+            min_value=-1.0,
+            max_value=1.0,
+            value=(-0.05, 0.05),
+            step=0.01,
+            format="%.2f"
+        )
+        pct_ranges[col] = (pct_min, pct_max)
 
     # # --- Apply Filters ---
         df_filtered = comp_df.copy()
@@ -132,9 +132,9 @@ with tab6:
         if col in df_filtered.columns:
             df_filtered = df_filtered[df_filtered[col].between(min_v, max_v)]
 
-    # for col, (min_v, max_v) in pct_ranges.items():
-    #     if col in df_filtered.columns:
-    #         df_filtered = df_filtered[df_filtered[col].between(min_v, max_v)]
+    for col, (min_v, max_v) in pct_ranges.items():
+        if col in df_filtered.columns:
+            df_filtered = df_filtered[df_filtered[col].between(min_v, max_v)]
 
     
     st.dataframe(df_filtered)
