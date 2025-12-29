@@ -9,4 +9,3 @@ plotly
 numerize
 nsefin
 openai
-ta
