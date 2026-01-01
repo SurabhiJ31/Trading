@@ -6,7 +6,6 @@ from companies import get_company_symbols, get_industry
 from fno import has_fno
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from chart_generator import create_distribution_view, create_heat_map, create_line_chart
-from ta.momentum import RSIIndicator
 
 windows = {
     "12W": 60,   
