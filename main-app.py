@@ -8,7 +8,7 @@ st.set_page_config(
 )
 import pandas as pd
 from companies import get_company_symbols
-from ai_insights import get_insights
+from ai_insights import get_insights, render_batch_insights
 from stock_info_generator import get_mohit_data
 
 
@@ -18,6 +18,12 @@ symbols=get_company_symbols()
 
 if "filtered_df" not in st.session_state:
     st.session_state.filtered_df = get_mohit_data()
+
+if "edited_df" not in st.session_state:
+    st.session_state.edited_df = None
+
+if "editor_key" not in st.session_state:
+    st.session_state.editor_key = 0
 
 def refresh_button_clicked():
     st.cache_data.clear()
@@ -56,8 +62,8 @@ st.markdown('<div class="app-title">Nifty Analysis Pro</div>', unsafe_allow_html
 st.markdown('<div class="app-subtitle">Multi-view market snapshot for Nifty 500</div>', unsafe_allow_html=True)
 
 # --- Tabs ---
-tab1, tab2 = st.tabs(
-    ["📈 Summary", "🧠 Insights"]
+tab1, tab2, tab3 = st.tabs(
+    ["📈 Summary", "🧠 Insights","TEST"]
 )
 
 with tab1:
@@ -104,7 +110,56 @@ with tab1:
             st.session_state.filtered_df=df_filtered
 
     if st.session_state.filtered_df is not None:
-        st.dataframe(st.session_state.filtered_df)
+        filtered_df_copy = st.session_state.filtered_df.copy()
+        if "Select" not in filtered_df_copy.columns:
+            filtered_df_copy.insert(0, "Select", False)
+        st.session_state.edited_df = filtered_df_copy
+        
+        if st.session_state.edited_df is not None:
+
+            edited_df = st.data_editor(
+                st.session_state.edited_df,
+                key=f"company_selector_{st.session_state.editor_key}",
+                hide_index=True,
+                use_container_width=True,
+                column_config={
+                    "Select": st.column_config.CheckboxColumn(
+                        "Select",
+                        help="Select companies to run operation"
+                    )
+                }
+            )
+            st.session_state.edited_df = edited_df
+            selected_df = st.session_state.edited_df[
+                    st.session_state.edited_df["Select"]
+                ]
+            selected_companies = selected_df["Stock"].tolist()
+            if selected_companies:
+                st.markdown(
+                    f"**Selected Companies ({len(selected_companies)}):** "
+                    + ", ".join(selected_companies)
+                )
+            else:
+                st.caption("No companies selected")
+
+            col1, col2 = st.columns([1, 3])
+
+            with col1:
+                proceed = st.button("Get insights for selected companies",disabled=len(selected_companies)==0)
+
+            with col2:
+                clear = st.button("Clear selection")
+            if proceed:
+                if selected_df.empty:
+                    st.warning("Please select at least one company.")
+                else:
+                    render_batch_insights(selected_companies)
+            
+            if clear and st.session_state.edited_df is not None:
+                st.session_state.edited_df["Select"]=False
+                st.session_state.editor_key += 1
+                st.rerun()
+
 
 
 
@@ -112,4 +167,9 @@ with tab1:
 with tab2:
     st.header("Market Insights")
     get_insights()
+
+with tab3:
+    a_com=['GODREJPROP','KALYANKJIL']
+    render_batch_insights(a_com)
+
 

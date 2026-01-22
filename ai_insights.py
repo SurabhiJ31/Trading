@@ -59,7 +59,6 @@ def fetch_company_news(
     to_date: datetime,
     language: str = "en",
 ) -> List[Dict[str, Any]]:
-    """Fetch company news via NewsAPI (needs NEWSAPI_KEY)."""
     api_key = st.secrets["NEWSAPI_KEY"]
     if not api_key:
         return []
@@ -251,51 +250,13 @@ def render_batch_insights(input_companies) -> None:
         st.info("No F&O companies available for batch analysis.")
         return
 
-    total = len(input_companies)
-    page_size = st.selectbox(
-        "Companies per page",
-        options=[2,10, 25, 50, 100],
-        index=1 if total >= 50 else 0,
-        key="insights_batch_page_size",
-    )
-
-    total_pages = max(1, (total + page_size - 1) // page_size)
-    if "insights_batch_page" not in st.session_state:
-        st.session_state["insights_batch_page"] = 1
-
-    col_prev, col_info, col_next = st.columns([1, 2, 1])
-    with col_prev:
-        if st.button("◀ Previous"):
-            st.session_state["insights_batch_page"] = max(
-                1, st.session_state["insights_batch_page"] - 1
-            )
-    with col_next:
-        if st.button("Next ▶"):
-            st.session_state["insights_batch_page"] = min(
-                total_pages, st.session_state["insights_batch_page"] + 1
-            )
-    with col_info:
-        st.markdown(
-            f"<div style='text-align:center;'>Page {st.session_state['insights_batch_page']} of {total_pages}</div>",
-            unsafe_allow_html=True,
-        )
-
-    page = st.session_state["insights_batch_page"]
-
-    start_idx = (page - 1) * page_size
-    end_idx = min(start_idx + page_size, total)
-    companies_to_analyze = input_companies[start_idx:end_idx]
-
-    st.caption(f"Showing companies {start_idx + 1}–{end_idx} of {total}.")
-
+    
     lookback_days = 10
-    proceed = st.button("Run batch sentiment analysis", key="sentiment_batch")
 
     # Prepare meta to detect when we need to recompute
     current_meta = {
         "anchor_date": str(datetime.now().date()),
         "lookback_days": lookback_days,
-        "page_size": page_size,
         "companies": tuple(input_companies),
     }
 
@@ -304,11 +265,11 @@ def render_batch_insights(input_companies) -> None:
     cached_meta = cache.get("meta")
 
     # If user hit Run or inputs changed, reset cache meta (rows kept but considered stale)
-    if proceed or cached_meta != current_meta:
+    if cached_meta != current_meta:
         cache = {"meta": current_meta, "rows": {}}
 
     # Fetch only for companies on the current page that are missing in cache
-    missing = [c for c in companies_to_analyze if c not in cache["rows"]]
+    missing = [c for c in input_companies if c not in cache["rows"]]
     if missing:
         anchor_date = datetime.now().date()
         with st.spinner("Analyzing sentiment for selected companies..."):
@@ -346,7 +307,7 @@ def render_batch_insights(input_companies) -> None:
         cache["meta"] = current_meta
         st.session_state["insights_batch_cache"] = cache
 
-    page_rows = [cache["rows"][c] for c in companies_to_analyze if c in cache["rows"]]
+    page_rows = [cache["rows"][c] for c in input_companies if c in cache["rows"]]
     if not page_rows:
         st.info("No insights for this page. Run batch or check data availability.")
         return
