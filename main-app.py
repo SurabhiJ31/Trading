@@ -148,7 +148,7 @@ with tab1:
                 proceed = st.button("Get insights for selected companies",disabled=len(selected_companies)==0)
 
             with col2:
-                clear = st.button("Clear selection")
+                clear = st.button("Clear selection",disabled=len(selected_companies)==0)
             if proceed:
                 if selected_df.empty:
                     st.warning("Please select at least one company.")
