@@ -4,8 +4,6 @@ import streamlit as st
 import pandas as pd
 from companies import get_company_symbols, get_industry
 from fno import has_fno
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from chart_generator import create_distribution_view, create_heat_map, create_line_chart
 from ta.momentum import RSIIndicator
 
 windows = {
@@ -61,13 +59,6 @@ def get_stock_data():
 
     return out
 
-def get_trend(df,days,current_price):
-    close_series = df["Close"]
-    if isinstance(close_series, pd.DataFrame):
-        close_series = close_series.iloc[:, 0]
-    day_close=float(close_series.iloc[-days])
-    trend=((current_price-day_close)/day_close)*100
-    return trend
 
 def get_moving_average(series, days):
     return round(float(series.tail(days).mean()),2)
@@ -77,33 +68,7 @@ def get_rsi(series,days):
     return round(rsi.iloc[-1], 2)
 
 
-def build_summaries(all_data, fundamentals=None):
-    summaries = []
-    fundamentals = fundamentals or {}
-    for s, df in all_data.items():
-        close_series = df["Close"]
-        if isinstance(close_series, pd.DataFrame):
-            close_series = close_series.iloc[:, 0]
-        current = float(close_series.iloc[-1])
-        summary = {"Stock": s,
-                   "Current Price": current,
-                   "Market Cap (Billion)": fundamentals.get(s, ""),
-                   "Industry": get_industry(s),
-                   "Options Available": has_fno(s),
-                   "Trend last 1 day": get_trend(df, 2, current),
-                   "Trend last 7 days": get_trend(df, 6, current)}
-        for label, days in windows.items():
-            prices = close_series[-days:]
-            if prices.empty:
-                continue
-            high, low = float(prices.max()), float(prices.min())
-            denom = high - low
-            delta = 1 - ((high - current) / denom) if denom != 0 else 0
-            summary[f"{label} High"] = round(high, 2)
-            summary[f"{label} Low"] = round(low, 2)
-            summary[f"{label} Delta"] = round(delta, 2)
-        summaries.append(summary)
-    return pd.DataFrame(summaries)
+
 
 def get_computed_date(all_data):
     infos=[]
@@ -118,6 +83,7 @@ def get_computed_date(all_data):
             ma_60=get_moving_average(close_series,60)
             info = {"Stock": s,
                    "Current Price": current,
+                   "Industry": get_industry(s),
                    "MA - 14D": ma_14,
                    "MA - 30D": ma_30,
                    "MA - 60D": ma_60,
@@ -136,76 +102,12 @@ def get_computed_date(all_data):
 
 
 
-@st.cache_data(show_spinner=False, ttl=3600)
-def fetch_fundamentals():
-    
-    m_caps = {}
-    def fetch_one(sym: str):
-        try:
-            cap = yf.Ticker(sym + ".NS").fast_info.get("marketCap")
-            return sym, round(float(cap)/BILLION,2) if cap else 0
-        except Exception:
-            return sym, ""
 
-    with ThreadPoolExecutor(max_workers=8) as pool:
-        futures = [pool.submit(fetch_one, s) for s in symbols]
-        for fut in as_completed(futures):
-            sym, val = fut.result()
-            if val:
-                m_caps[sym] = val
-    
 
-    return m_caps
-
-@st.cache_data(show_spinner=False, ttl=900)
-def get_summary():
-    all_data = get_stock_data()
-    fundamentals = fetch_fundamentals()
-    summaries_df = build_summaries(all_data, fundamentals)
-    return all_data, summaries_df
 
 @st.cache_data(show_spinner=False, ttl=900)
 def get_mohit_data():
     all_data = get_stock_data()
     return get_computed_date(all_data)
-    
-
-
-
-
-
-def get_distribution(stock):
-    alldata = get_stock_data()
-    df=alldata[stock]
-    latest_price = float(df['Close'].iloc[-1].item())
-    latest_price_label=f"Latest Price: {latest_price:.2f}"
-
-    for label, days in windows.items():
-        prices = df['Close'][-days:]
-
-        # PDF
-        create_distribution_view(prices, latest_price, latest_price_label, 
-                                 f"{stock} PDF - Last {label}", "Price", "Density")
-
-        # CDF
-        create_distribution_view(prices, latest_price, latest_price_label, 
-                                 f"{stock} CDF - Last {label}", "Price", "Cumulative Probability", showCumulative=True)
-
-
-def get_heat_map():
-    alldata,df=get_summary()
-    xaxis_labels=[]
-    for label, _ in windows.items():
-        xaxis_labels.append(f"{label} Delta")
-    create_heat_map(df,"Stock",xaxis_labels)
-
-    st.subheader("Line chart")
-    selected_stock = st.selectbox("Select Stock", symbols, key="tab2key")
-    
-    stock_df = alldata[selected_stock]
-    stock_df.reset_index(inplace=True)
-    three_months_ago = datetime.now() - timedelta(days=90)
-    df_3m = stock_df[stock_df['Date'] >= three_months_ago]
-    create_line_chart(df_3m)
 
     

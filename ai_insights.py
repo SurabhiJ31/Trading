@@ -105,6 +105,80 @@ def build_market_context(
     }
 
 
+def generate_announcement_analysis(announcement):
+    formatted_context=json.dumps(announcement)
+    tools = [
+        {
+            "type": "function",
+            "function": {
+                "name": "return_insights",
+                "description": "Return confidence score with reasoning",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "insights": {
+                            "type": "array",
+                            "items": {
+                                "type": "object",
+                                "properties": {
+                                    "sentiment_score": {"type": "string"},
+                                    "reason": {"type": "string"}
+                                },
+                                "required": ["sentiment_score", "reason",],
+                            },
+                        }
+                    },
+                    "required": ["insights"],
+                },
+            },
+        }
+    ]
+
+    system_prompt = (
+    "You are a meticulous financial analyst. "
+    "You are given a corporate announcement from NSE consisting of a short summary "
+    "and detailed disclosure text extracted from an official PDF filing. "
+    "You must prioritize factual information from the PDF over the summary. "
+    "Ignore boilerplate legal language unless it indicates risk. "
+    "Assign a market sentiment score between 0 and 1 "
+    "(0 = negative, 0.5 = neutral, 1 = positive). "
+    "Explain clearly what factors influenced the score."
+)
+    config = get_openai_client_with_mohit_key()
+    client: OpenAI = config["client"]
+    model: str = config["model"]
+
+    completion = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {
+                "role": "user",
+                "content": (
+                    "Analyse the sentiment for this NSE company based on the announcement. "
+                    "Call the return_insights tool with JSON describing the sentiment_score and reason"
+                    f"Context:\n{formatted_context}"
+                ),
+            },
+        ],
+        tools=tools,
+        tool_choice={"type": "function", "function": {"name": "return_insights"}},
+    )
+
+    tool_call = completion.choices[0].message.tool_calls
+    if not tool_call:
+        return {"error": "The analysis did not return structured insights."}
+
+    arguments = tool_call[0].function.arguments
+    try:
+        parsed = json.loads(arguments)
+        return parsed
+    except json.JSONDecodeError:
+        return {"error": "Unable to parse analysis output."}
+    
+
+
+
 def generate_market_analysis(
     ticker: str,
     company_name: str,
@@ -153,7 +227,7 @@ def generate_market_analysis(
 
     system_prompt = (
         "You are a meticulous financial analyst. "
-        "Your goal is to assign a market sentiment score using the provided news articles."
+        "Your goal is to assign a market sentiment score using the provided news articles. There will be company related news articles as well as domain related."
         "The score should be on a scale of 0 to 1 where 0.5 means neutral, 1 means positive, 0 means negative."
         "There must be an explanation for arriving at that score."
         "The explanation must cite the relevant sources. "
@@ -207,6 +281,16 @@ def get_company_sentiment_cached(
 
     return generate_market_analysis(ticker, company_name, articles)
 
+#TODO: Update with mohit's api key after testing
+@st.cache_resource(show_spinner=False)
+def get_openai_client_with_mohit_key() -> Dict[str, Any]:
+    api_key = st.secrets["OPENAI_API_KEY"].replace("\n", "")
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY environment variable is required.")
+
+    client = OpenAI(api_key=api_key)
+    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    return {"client": client, "model": model}
 
 @st.cache_resource(show_spinner=False)
 def get_openai_client() -> Dict[str, Any]:
@@ -316,4 +400,30 @@ def render_batch_insights(input_companies) -> None:
     st.dataframe(
             df_page.sort_values("Sentiment Score (0-1)", ascending=False)
         )
+    
+
+def get_insights_for_nse_announcements(announcements) -> None:
+
+    
+    if not announcements:
+        return
+    all_insights=[]
+    for announcement in announcements:
+        analysis = generate_announcement_analysis(announcement)
+        if "error" in analysis or not analysis:
+            return
+        insights = analysis.get("insights", [])
+        if not insights:
+            return
+        top = insights[0]
+        insight = {
+            "Symbol":announcement.get("Symbol"),
+            "Title":announcement.get("title"),
+            "Sentiment Score (0-1)": top.get("sentiment_score"),
+            "Reason": top.get("reason"),
+            "Link":announcement.get("link"),
+            }
+        st.toast(insight)
+        all_insights.append(insight)
+    return all_insights
         

@@ -10,3 +10,5 @@ numerize
 nsefin
 openai
 ta
+feedparser
+pdfplumber

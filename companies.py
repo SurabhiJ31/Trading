@@ -1,4 +1,5 @@
 import streamlit as st
+import re
 
 stocks = {
     "360ONE": {'company': '360 ONE WAM Ltd.', 'industry': 'Financial Services'},
@@ -515,22 +516,13 @@ def get_industry(company):
 @st.cache_data
 def get_company_name(company):
     return stocks[company]['company']
+
+
     
 
-def get_nifty50_companies():
-    companies = [
-                "RELIANCE", "TCS", "INFY", "HDFCBANK", "ICICIBANK",
-                "ITC", "LT", "SBIN", "BHARTIARTL", "HINDUNILVR",
-                "ASIANPAINT", "AXISBANK", "KOTAKBANK", "BAJFINANCE",
-                "ADANIENT", "ADANIPORTS", "SUNPHARMA", "HCLTECH",
-                "ULTRACEMCO", "TITAN", "WIPRO", "ONGC", "MARUTI",
-                "POWERGRID", "NTPC", "TATAMOTORS", "JSWSTEEL",
-                "TATASTEEL", "BAJAJFINSV", "NESTLEIND", "TECHM",
-                "COALINDIA", "GRASIM", "SBILIFE", "HDFCLIFE",
-                "DRREDDY", "BRITANNIA", "CIPLA", "EICHERMOT",
-                "HEROMOTOCO", "TATACONSUM", "INDUSINDBK", "APOLLOHOSP",
-                "BPCL", "BAJAJ-AUTO", "DIVISLAB", "HINDALCO",
-                "ADANIGREEN", "ADANIPOWER", "DABUR", "SHRIRAMFIN"
-            ]
-        
-    return companies
+def normalize_name(name: str) -> str:
+    name = name.lower()
+    name = re.sub(r'\b(limited|ltd)\b', '', name)
+    name = re.sub(r'[^a-z0-9 ]', '', name)
+    name = re.sub(r'\s+', ' ', name)
+    return name.strip()

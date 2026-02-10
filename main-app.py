@@ -10,12 +10,15 @@ import pandas as pd
 from companies import get_company_symbols
 from ai_insights import get_insights, render_batch_insights
 from stock_info_generator import get_mohit_data
+from nse_announcement_parser import abcfd
 
 
 
 summary_df=pd.DataFrame()
 symbols=get_company_symbols()
 
+
+    
 if "filtered_df" not in st.session_state:
     st.session_state.filtered_df = get_mohit_data()
 
@@ -24,6 +27,7 @@ if "edited_df" not in st.session_state:
 
 if "editor_key" not in st.session_state:
     st.session_state.editor_key = 0
+
 
 def refresh_button_clicked():
     st.cache_data.clear()
@@ -165,11 +169,14 @@ with tab1:
 
 
 with tab2:
-    st.header("Market Insights")
-    get_insights()
+     st.header("Market Insights")
+     get_insights()
 
 with tab3:
-    a_com=['GODREJPROP','KALYANKJIL']
-    render_batch_insights(a_com)
+    if st.button("Get latest announcements"):
+        insights =abcfd()
+        df = pd.DataFrame(insights)
+        st.dataframe(df)
+    
 
 
