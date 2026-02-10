@@ -10,11 +10,34 @@ import pandas as pd
 from companies import get_company_symbols
 from ai_insights import get_insights, render_batch_insights
 from stock_info_generator import get_mohit_data
+import requests
+import feedparser
 
 
 
 summary_df=pd.DataFrame()
 symbols=get_company_symbols()
+
+def fetch_nse_corporate_announcements(limit=20):
+    RSS_URL = "https://nsearchives.nseindia.com/content/RSS/Online_announcements.xml"
+
+    HEADERS = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "application/rss+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Connection": "keep-alive",
+    }
+    response = requests.get(
+        RSS_URL,
+        headers=HEADERS,
+        timeout=10
+    )
+    response.raise_for_status()
+
+    feed = feedparser.parse(response.content)
+    return feed.entries[:20]
 
 if "filtered_df" not in st.session_state:
     st.session_state.filtered_df = get_mohit_data()
@@ -165,11 +188,11 @@ with tab1:
 
 
 with tab2:
-    st.header("Market Insights")
-    get_insights()
+     st.header("Market Insights")
+     get_insights()
 
 with tab3:
-    a_com=['GODREJPROP','KALYANKJIL']
-    render_batch_insights(a_com)
+    f=fetch_nse_corporate_announcements()
+    st.write(f)
 
 

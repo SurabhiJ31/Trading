@@ -118,6 +118,7 @@ def get_computed_date(all_data):
             ma_60=get_moving_average(close_series,60)
             info = {"Stock": s,
                    "Current Price": current,
+                   "Industry": get_industry(s),
                    "MA - 14D": ma_14,
                    "MA - 30D": ma_30,
                    "MA - 60D": ma_60,

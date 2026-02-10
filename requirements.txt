@@ -10,3 +10,4 @@ numerize
 nsefin
 openai
 ta
+feedparser
