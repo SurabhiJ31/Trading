@@ -10,7 +10,7 @@ import pandas as pd
 from companies import get_company_symbols
 from ai_insights import get_insights, render_batch_insights
 from stock_info_generator import get_mohit_data
-from nse_announcement_parser import nse_announcement_updater, get_nse_announcements_insights
+from nse_announcement_parser import nse_feed_updater, get_nse_announcements_insights
 import threading
 from datetime import datetime
 from notification_manager import notification_fragment
@@ -21,7 +21,7 @@ if "notifications" not in st.session_state:
 
 if "thread_started" not in st.session_state:
     thread = threading.Thread(
-        target=nse_announcement_updater,
+        target=nse_feed_updater,
         daemon=True
     )
     thread.start()

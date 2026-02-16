@@ -161,7 +161,9 @@ def get_nse_announcements_insights():
     return nse_announcements_insights
 
 
-def nse_announcement_updater():
+
+
+def nse_feed_updater():
     while True:
         logger.info("nse announcement collecter executed")
         update_nse_announcement_insights()
