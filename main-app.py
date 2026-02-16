@@ -10,13 +10,27 @@ import pandas as pd
 from companies import get_company_symbols
 from ai_insights import get_insights, render_batch_insights
 from stock_info_generator import get_mohit_data
-from nse_announcement_parser import abcfd
+from nse_announcement_parser import nse_announcement_updater, get_nse_announcements_insights
+import threading
+from datetime import datetime
+from notification_manager import notification_fragment
+
+
+if "notifications" not in st.session_state:
+    st.session_state.notifications = []
+
+if "thread_started" not in st.session_state:
+    thread = threading.Thread(
+        target=nse_announcement_updater,
+        daemon=True
+    )
+    thread.start()
+    st.session_state.thread_started = True
 
 
 
 summary_df=pd.DataFrame()
 symbols=get_company_symbols()
-
 
     
 if "filtered_df" not in st.session_state:
@@ -31,6 +45,7 @@ if "editor_key" not in st.session_state:
 
 def refresh_button_clicked():
     st.cache_data.clear()
+
 
 # --- Global Style ---
 st.markdown(
@@ -55,20 +70,27 @@ st.markdown(
 # --- Sidebar ---
 with st.sidebar:
     st.markdown("### ⚙️ Controls")
-    st.button("Refresh data", on_click=refresh_button_clicked, use_container_width=True)
+    st.button("Refresh data", on_click=refresh_button_clicked, width="content")
     st.markdown("---")
     st.markdown("**Universe:** Nifty 500")
     st.markdown("**Data source:** Yahoo Finance")
     st.markdown("**Updated:** Cached (1d)")
 
+
+
+
+notification_fragment()
+
 # --- Header ---
 st.markdown('<div class="app-title">Nifty Analysis Pro</div>', unsafe_allow_html=True)
 st.markdown('<div class="app-subtitle">Multi-view market snapshot for Nifty 500</div>', unsafe_allow_html=True)
 
+
 # --- Tabs ---
-tab1, tab2, tab3 = st.tabs(
-    ["📈 Summary", "🧠 Insights","TEST"]
+tab1, tab2, tab3,tab4 = st.tabs(
+    ["📈 Summary", "🧠 Insights","nse announcements","TEST2"]
 )
+
 
 with tab1:
     with st.form("filter_form"):
@@ -125,7 +147,7 @@ with tab1:
                 st.session_state.edited_df,
                 key=f"company_selector_{st.session_state.editor_key}",
                 hide_index=True,
-                use_container_width=True,
+                width="content",
                 column_config={
                     "Select": st.column_config.CheckboxColumn(
                         "Select",
@@ -173,10 +195,29 @@ with tab2:
      get_insights()
 
 with tab3:
-    if st.button("Get latest announcements"):
-        insights =abcfd()
-        df = pd.DataFrame(insights)
+    @st.fragment(run_every="1m")
+    def show_nse_insights():
+        insights = get_nse_announcements_insights()
+        today_dt=datetime.now().date()
+        today_insights=insights[str(today_dt)]
+        df=pd.DataFrame(today_insights)
         st.dataframe(df)
+    
+    show_nse_insights()
+    if st.button("Refresh"):
+        insights = get_nse_announcements_insights()
+        today_dt=datetime.now().date()
+        today_insights=insights[str(today_dt)]
+        df=pd.DataFrame(today_insights)
+        st.dataframe(df)
+
+        st.write(insights)
+
+
+
+
+
+    
     
 
 

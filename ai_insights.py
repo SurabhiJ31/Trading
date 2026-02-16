@@ -8,6 +8,16 @@ from openai import OpenAI
 import requests
 import streamlit as st
 from companies import get_company_name
+from notification_manager import add_notification
+import logging
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,  # Change to INFO in production
+    format='%(asctime)s [%(levelname)s] %(message)s',
+)
+
+logger = logging.getLogger(__name__)
 
 selected_companies = get_companies_with_fno()
 
@@ -106,6 +116,7 @@ def build_market_context(
 
 
 def generate_announcement_analysis(announcement):
+    logger.info(f"getting ai info for {announcement.get("title")}")
     formatted_context=json.dumps(announcement)
     tools = [
         {
@@ -144,7 +155,7 @@ def generate_announcement_analysis(announcement):
     "(0 = negative, 0.5 = neutral, 1 = positive). "
     "Explain clearly what factors influenced the score."
 )
-    config = get_openai_client_with_mohit_key()
+    config = get_openai_client()
     client: OpenAI = config["client"]
     model: str = config["model"]
 
@@ -281,17 +292,6 @@ def get_company_sentiment_cached(
 
     return generate_market_analysis(ticker, company_name, articles)
 
-#TODO: Update with mohit's api key after testing
-@st.cache_resource(show_spinner=False)
-def get_openai_client_with_mohit_key() -> Dict[str, Any]:
-    api_key = st.secrets["OPENAI_API_KEY"].replace("\n", "")
-    if not api_key:
-        raise RuntimeError("OPENAI_API_KEY environment variable is required.")
-
-    client = OpenAI(api_key=api_key)
-    model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
-    return {"client": client, "model": model}
-
 @st.cache_resource(show_spinner=False)
 def get_openai_client() -> Dict[str, Any]:
     api_key = st.secrets["OPENAI_API_KEY"].replace("\n", "")
@@ -401,14 +401,8 @@ def render_batch_insights(input_companies) -> None:
             df_page.sort_values("Sentiment Score (0-1)", ascending=False)
         )
     
-
-def get_insights_for_nse_announcements(announcements) -> None:
-
-    
-    if not announcements:
-        return
-    all_insights=[]
-    for announcement in announcements:
+def get_insight_for_nse_announcement(announcement):
+    try:
         analysis = generate_announcement_analysis(announcement)
         if "error" in analysis or not analysis:
             return
@@ -416,14 +410,41 @@ def get_insights_for_nse_announcements(announcements) -> None:
         if not insights:
             return
         top = insights[0]
+        sent_score=top.get("sentiment_score")
+        title=announcement.get("title")
+        logger.info(f"insight fetched for {title} with score {sent_score}")
         insight = {
             "Symbol":announcement.get("Symbol"),
-            "Title":announcement.get("title"),
-            "Sentiment Score (0-1)": top.get("sentiment_score"),
+            "Title":title,
+            "Sentiment Score (0-1)": sent_score,
             "Reason": top.get("reason"),
             "Link":announcement.get("link"),
+            "Published_Date":announcement.get("published")
             }
-        st.toast(insight)
-        all_insights.append(insight)
+        
+        try:
+            
+            notif_text = f"New announcemnt for {title} with sentiment {sent_score}"
+            add_notification(message=notif_text)
+                
+        except Exception as e:
+            logger.error(e)  
+
+        return insight
+    except:
+        #TODO: Log error
+        return None
+
+def get_insights_for_nse_announcements(announcements) -> None:
+
+    if not announcements:
+        return
+    all_insights=[]
+    for announcement in announcements:
+
+        insight = get_insight_for_nse_announcement(announcement)
+        if insight is not None:
+            all_insights.append(insight)
+       
     return all_insights
         
