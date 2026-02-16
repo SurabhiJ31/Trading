@@ -10,7 +10,7 @@ import pandas as pd
 from companies import get_company_symbols
 from ai_insights import get_insights, render_batch_insights
 from stock_info_generator import get_mohit_data
-from nse_announcement_parser import nse_feed_updater, get_nse_announcements_insights
+from nse_announcement_parser import nse_feed_updater, get_nse_announcements
 import threading
 from datetime import datetime
 from notification_manager import notification_fragment
@@ -197,7 +197,7 @@ with tab2:
 with tab3:
     @st.fragment(run_every="1m")
     def show_nse_insights():
-        insights = get_nse_announcements_insights()
+        insights = get_nse_announcements()
         today_dt=datetime.now().date()
         today_insights=insights[str(today_dt)]
         df=pd.DataFrame(today_insights)
@@ -205,7 +205,7 @@ with tab3:
     
     show_nse_insights()
     if st.button("Refresh"):
-        insights = get_nse_announcements_insights()
+        insights = get_nse_announcements()
         today_dt=datetime.now().date()
         today_insights=insights[str(today_dt)]
         df=pd.DataFrame(today_insights)

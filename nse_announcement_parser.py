@@ -157,10 +157,9 @@ def update_nse_announcement_insights():
                 nse_announcements_insights[only_date].append(insight)
 
 
-def get_nse_announcements_insights():
+
+def get_nse_announcements():
     return nse_announcements_insights
-
-
 
 
 def nse_feed_updater():
