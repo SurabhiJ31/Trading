@@ -7,3 +7,4 @@ ta
 feedparser
 pdfplumber
 supabase
+dotenv
