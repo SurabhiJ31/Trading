@@ -13,9 +13,9 @@ class Settings:
             env = os.getenv("ENV", "dev")
 
             if env == "prod":
-                load_dotenv(".env.prod")
+                load_dotenv("conf.env.prod")
             else:
-                load_dotenv(".env.dev")
+                load_dotenv("conf.env.dev")
 
             self.SUPABASE_URL = os.getenv("SUPABASE_URL")
             self.SUPABASE_KEY = os.getenv("SUPABASE_KEY")

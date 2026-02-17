@@ -1,5 +1,5 @@
 from supabase import create_client, Client
-from settings import Settings
+from infrastructure.settings import Settings
 import streamlit as st
 
 

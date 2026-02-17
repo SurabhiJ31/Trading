@@ -166,6 +166,6 @@ def nse_feed_updater():
     while True:
         logger.info("nse announcement collecter executed")
         update_nse_announcement_insights()
-        time.sleep(600) #10 mins
+        time.sleep(60000) #10 mins
 
 

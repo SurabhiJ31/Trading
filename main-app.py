@@ -14,6 +14,7 @@ from nse_announcement_parser import nse_feed_updater, get_nse_announcements
 import threading
 from datetime import datetime
 from notification_manager import notification_fragment
+from repository.dummy_repo import DummyRepository
 
 
 if "notifications" not in st.session_state:
@@ -24,8 +25,8 @@ if "thread_started" not in st.session_state:
         target=nse_feed_updater,
         daemon=True
     )
-    thread.start()
-    st.session_state.thread_started = True
+    # thread.start()
+    # st.session_state.thread_started = True
 
 
 
@@ -203,15 +204,14 @@ with tab3:
         df=pd.DataFrame(today_insights)
         st.dataframe(df)
     
-    show_nse_insights()
-    if st.button("Refresh"):
-        insights = get_nse_announcements()
-        today_dt=datetime.now().date()
-        today_insights=insights[str(today_dt)]
-        df=pd.DataFrame(today_insights)
-        st.dataframe(df)
-
+    #show_nse_insights()
         st.write(insights)
+
+with tab4:
+    repo=DummyRepository()
+    a=repo.get_all()
+    st.write(a)
+    
 
 
 
