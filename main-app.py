@@ -10,10 +10,11 @@ import pandas as pd
 from companies import get_company_symbols
 from ai_insights import get_insights, render_batch_insights
 from stock_info_generator import get_mohit_data
-from nse_announcement_parser import nse_feed_updater, get_nse_announcements
+from nse_announcement_parser import nse_feed_updater
 import threading
-from datetime import datetime
+from datetime import date, timedelta
 from notification_manager import notification_fragment
+from data_service.announcement_service import AnnouncementService
 
 
 if "notifications" not in st.session_state:
@@ -31,6 +32,7 @@ if "thread_started" not in st.session_state:
 
 summary_df=pd.DataFrame()
 symbols=get_company_symbols()
+ann_service=AnnouncementService()
 
     
 if "filtered_df" not in st.session_state:
@@ -41,6 +43,16 @@ if "edited_df" not in st.session_state:
 
 if "editor_key" not in st.session_state:
     st.session_state.editor_key = 0
+
+
+if "date_filter_type" not in st.session_state:
+    st.session_state.date_filter_type = "Today"
+
+if "custom_start_date" not in st.session_state:
+    st.session_state.custom_start_date = date.today()
+
+if "custom_end_date" not in st.session_state:
+    st.session_state.custom_end_date = date.today()
 
 
 def refresh_button_clicked():
@@ -194,25 +206,52 @@ with tab2:
      st.header("Market Insights")
      get_insights()
 
+
+def render_filters():
+    try:
+        col1, col2 = st.columns([2, 3])
+
+        with col1:
+            filter_option = st.selectbox(
+                "Select Date Filter",
+                ["Today", "Yesterday", "Custom"],
+                index=["Today", "Yesterday", "Custom"].index(
+                    st.session_state.date_filter_type
+                ),
+                key="date_filter_type"
+            )
+
+        if st.session_state.date_filter_type == "Custom":
+            with col2:
+                start_date, end_date = st.date_input(
+                    "Select Date Range",
+                    value=(
+                        st.session_state.custom_start_date,
+                        st.session_state.custom_end_date,
+                    ),
+                )
+                st.session_state.custom_start_date = start_date
+                st.session_state.custom_end_date = end_date
+    except:
+        pass
+
 with tab3:
     @st.fragment(run_every="1m")
     def show_nse_insights():
-        insights = get_nse_announcements()
-        today_dt=datetime.now().date()
-        today_insights=insights[str(today_dt)]
+        today_dt=date.today()
+        if st.session_state.date_filter_type == "Today":
+            start_date=end_date = today_dt
+        elif st.session_state.date_filter_type == "Yesterday":
+            start_date=end_date = today_dt - timedelta(days=1)
+        else:
+            start_date =st.session_state.custom_start_date
+            end_date=st.session_state.custom_end_date
+        
+        today_insights=ann_service.list_announcements_for_given_date(start_date,end_date)
         df=pd.DataFrame(today_insights)
         st.dataframe(df)
-    
+    render_filters()
     show_nse_insights()
-    if st.button("Refresh"):
-        insights = get_nse_announcements()
-        today_dt=datetime.now().date()
-        today_insights=insights[str(today_dt)]
-        df=pd.DataFrame(today_insights)
-        st.dataframe(df)
-
-        st.write(insights)
-
 
 
 

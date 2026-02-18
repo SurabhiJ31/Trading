@@ -65,11 +65,6 @@ def notification_fragment():
 
 def add_notification(message, ntype="info"):
     logger.info(f"in add notif {message}")
-    # st.session_state.notifications.append({
-    #     "id": str(uuid.uuid4()),
-    #     "message": message,
-    #     "type": ntype
-    # })
     notification_queue.put({
         "id": str(uuid.uuid4()),
         "message": message,

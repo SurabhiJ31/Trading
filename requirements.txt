@@ -1,14 +1,10 @@
 streamlit
 yfinance
 pandas
-matplotlib
-seaborn
-scipy
-openpyxl
-plotly
-numerize
 nsefin
 openai
 ta
 feedparser
 pdfplumber
+supabase
+dotenv
