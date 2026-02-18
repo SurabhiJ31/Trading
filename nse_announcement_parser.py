@@ -12,6 +12,8 @@ from collections import defaultdict
 import threading
 import time
 import logging
+from data_service.announcement_service import AnnouncementService
+import streamlit as st
 
 # Configure logging
 logging.basicConfig(
@@ -32,12 +34,11 @@ HEADERS = {
         "Connection": "keep-alive",
     }
 date_format = '%d-%b-%Y %H:%M:%S'
-recent_datetime = datetime.now()-timedelta(hours=3)
 lock = threading.Lock()
 
-ags=[]
 
-announcement_list=[]
+ann_service=AnnouncementService()
+recent_datetime =ann_service.get_latest_nse_announcement_time()
 nse_announcements_insights=defaultdict(list)
 
 def get_nse_session():
@@ -84,12 +85,6 @@ def parse_announcements(feed_entries):
             try:
                 feed_date=datetime.strptime(entry.get('published'), date_format)
                 if feed_date > recent_datetime :
-                    announcement_list.append({
-                        "title": entry.title,
-                        "link": entry.get('link'),
-                        "published": feed_date,
-                        "summary": entry.summary
-                    })
 
                     norm_title=normalize_name(entry.title)
                     #logger.info(f"nse announcement fetched for {norm_title}")
@@ -152,8 +147,10 @@ def update_nse_announcement_insights():
         for announcement in announcements_with_extracted_pdf:
             insight = get_insight_for_nse_announcement(announcement)
             if insight is not None:
-                dt_object = datetime.strptime(insight.get('Published_Date'), date_format)
-                only_date = str(dt_object.date())
+                dt_object = datetime.strptime(insight.get("Published_Time"), date_format)
+                only_date = dt_object.date()
+                insight['Date']=str(only_date)
+                ann_service.save_insight(insight)
                 nse_announcements_insights[only_date].append(insight)
 
 
@@ -166,6 +163,6 @@ def nse_feed_updater():
     while True:
         logger.info("nse announcement collecter executed")
         update_nse_announcement_insights()
-        time.sleep(60000) #10 mins
+        time.sleep(600) #10 mins
 
 

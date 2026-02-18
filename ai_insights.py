@@ -412,14 +412,14 @@ def get_insight_for_nse_announcement(announcement):
         top = insights[0]
         sent_score=top.get("sentiment_score")
         title=announcement.get("title")
-        logger.info(f"insight fetched for {title} with score {sent_score}")
+        
         insight = {
             "Symbol":announcement.get("Symbol"),
             "Title":title,
-            "Sentiment Score (0-1)": sent_score,
+            "Sentiment_Score": sent_score,
             "Reason": top.get("reason"),
             "Link":announcement.get("link"),
-            "Published_Date":announcement.get("published")
+            "Published_Time":announcement.get("published")
             }
         
         try:
@@ -435,16 +435,4 @@ def get_insight_for_nse_announcement(announcement):
         #TODO: Log error
         return None
 
-def get_insights_for_nse_announcements(announcements) -> None:
-
-    if not announcements:
-        return
-    all_insights=[]
-    for announcement in announcements:
-
-        insight = get_insight_for_nse_announcement(announcement)
-        if insight is not None:
-            all_insights.append(insight)
-       
-    return all_insights
         
