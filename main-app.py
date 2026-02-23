@@ -7,7 +7,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 import pandas as pd
-from companies import get_company_symbols
 from ai_insights import get_insights, render_batch_insights
 from stock_info_generator import get_mohit_data
 from nse_announcement_parser import nse_feed_updater
@@ -15,6 +14,7 @@ import threading
 from datetime import date, timedelta
 from notification_manager import notification_fragment
 from data_service.announcement_service import AnnouncementService
+from service_provider import get_companies_service
 
 
 if "notifications" not in st.session_state:
@@ -31,9 +31,10 @@ if "thread_started" not in st.session_state:
 
 
 summary_df=pd.DataFrame()
-symbols=get_company_symbols()
 ann_service=AnnouncementService()
+comp_service=get_companies_service()
 
+symbols=comp_service.get_company_symbols()
     
 if "filtered_df" not in st.session_state:
     st.session_state.filtered_df = get_mohit_data()

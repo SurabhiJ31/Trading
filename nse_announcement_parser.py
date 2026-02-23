@@ -4,7 +4,6 @@ import feedparser
 from datetime import datetime, timedelta
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
-from companies import normalize_name
 from fno import get_fno_companies_normalised
 from ai_insights import get_insight_for_nse_announcement
 from pdf_extractor import gdf
@@ -14,6 +13,9 @@ import time
 import logging
 from data_service.announcement_service import AnnouncementService
 import streamlit as st
+from service_provider import get_companies_service
+
+comp_service=get_companies_service()
 
 # Configure logging
 logging.basicConfig(
@@ -86,7 +88,7 @@ def parse_announcements(feed_entries):
                 feed_date=datetime.strptime(entry.get('published'), date_format)
                 if feed_date > recent_datetime :
 
-                    norm_title=normalize_name(entry.title)
+                    norm_title=comp_service.normalize_name(entry.title)
                     #logger.info(f"nse announcement fetched for {norm_title}")
                     companies_norm=get_fno_companies_normalised()
                     if norm_title in companies_norm.keys():

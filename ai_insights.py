@@ -7,9 +7,11 @@ import pandas as pd
 from openai import OpenAI
 import requests
 import streamlit as st
-from companies import get_company_name
 from notification_manager import add_notification
 import logging
+from service_provider import get_companies_service
+
+comp_service=get_companies_service()
 
 # Configure logging
 logging.basicConfig(
@@ -27,7 +29,7 @@ def get_insights():
 
     with single_tab:
         ticker = st.selectbox("Stock", selected_companies, key="insights_single_ticker")
-        company_name = get_company_name(ticker)
+        company_name = comp_service.get_company_name(ticker)
         lookback_days = st.slider(
             "Days to analyze", min_value=1, max_value=100, value=10, key="insights_single_lookback"
         )
@@ -358,7 +360,7 @@ def render_batch_insights(input_companies) -> None:
         anchor_date = datetime.now().date()
         with st.spinner("Analyzing sentiment for selected companies..."):
             for ticker in missing:
-                company_name = get_company_name(ticker)
+                company_name = comp_service.get_company_name(ticker)
                 analysis = get_company_sentiment_cached(
                     ticker, company_name, anchor_date, lookback_days
                 )

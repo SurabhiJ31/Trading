@@ -2,9 +2,11 @@ from datetime import datetime, timedelta
 import yfinance as yf
 import streamlit as st
 import pandas as pd
-from companies import get_company_symbols, get_industry
 from fno import has_fno
 from ta.momentum import RSIIndicator
+from service_provider import get_companies_service
+
+comp_service=get_companies_service()
 
 windows = {
     "12W": 60,   
@@ -14,7 +16,7 @@ windows = {
 
 BILLION = 1000000000
 
-symbols=get_company_symbols()
+symbols=comp_service.get_company_symbols()
 
 
 @st.cache_data(ttl="1d")
@@ -83,7 +85,7 @@ def get_computed_date(all_data):
             ma_60=get_moving_average(close_series,60)
             info = {"Stock": s,
                    "Current Price": current,
-                   "Industry": get_industry(s),
+                   "Industry": comp_service.get_industry(s),
                    "MA - 14D": ma_14,
                    "MA - 30D": ma_30,
                    "MA - 60D": ma_60,
