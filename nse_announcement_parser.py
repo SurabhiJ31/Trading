@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 import feedparser
-from datetime import datetime, timedelta
+from datetime import datetime
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
 from fno import get_fno_companies_normalised
@@ -10,20 +10,13 @@ from pdf_extractor import gdf
 from collections import defaultdict
 import threading
 import time
-import logging
 from data_service.announcement_service import AnnouncementService
-import streamlit as st
 from service_provider import get_companies_service
+from global_logging import logger
 
 comp_service=get_companies_service()
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,  # Change to INFO in production
-    format='%(asctime)s [%(levelname)s] %(message)s',
-)
 
-logger = logging.getLogger(__name__)
 
 RSS_URL = "https://nsearchives.nseindia.com/content/RSS/Online_announcements.xml"
 
@@ -42,6 +35,7 @@ lock = threading.Lock()
 ann_service=AnnouncementService()
 recent_datetime =ann_service.get_latest_nse_announcement_time()
 nse_announcements_insights=defaultdict(list)
+
 
 def get_nse_session():
     session = requests.Session()
@@ -63,10 +57,11 @@ def get_nse_session():
 
     return session
 
+NSE_SESSION = get_nse_session()
 
 def fetch_nse_corporate_announcements():
     try:
-        session=get_nse_session()
+        session=NSE_SESSION
         response=session.get(RSS_URL,timeout=10)
         response.raise_for_status()
         feed = feedparser.parse(response.content)

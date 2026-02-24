@@ -1,15 +1,7 @@
 import uuid
 import streamlit as st
-import logging
+from global_logging import logger
 import queue
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,  # Change to INFO in production
-    format='%(asctime)s [%(levelname)s] %(message)s',
-)
-
-logger = logging.getLogger(__name__)
 
 notification_queue = queue.Queue()
 

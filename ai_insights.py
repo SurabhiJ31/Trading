@@ -8,19 +8,10 @@ from openai import OpenAI
 import requests
 import streamlit as st
 from notification_manager import add_notification
-import logging
+from global_logging import logger
 from service_provider import get_companies_service
 
 comp_service=get_companies_service()
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,  # Change to INFO in production
-    format='%(asctime)s [%(levelname)s] %(message)s',
-)
-
-logger = logging.getLogger(__name__)
-
 selected_companies = get_companies_with_fno()
 
 
