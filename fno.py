@@ -6,27 +6,9 @@ import requests
 comp_service=get_companies_service()
 
 
-def get_nse_session():
-    session = requests.Session()
-    session.headers.update({
-        "User-Agent": "Mozilla/5.0",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Accept-Encoding": "gzip, deflate, br"
-    })
-    session.get("https://www.nseindia.com")  # Important: initialize cookies
-    return session
 
-GLOBAL_NSE_SESSION=get_nse_session()
-@st.cache_data(ttl="1d")
 def get_fno_list():
-    session = GLOBAL_NSE_SESSION
-    url = "https://www.nseindia.com/api/equity-stockIndices?index=SECURITIES%20IN%20F%26O"
-    
-    response = session.get(url)
-    data = response.json()
-    
-    stocks = [item["symbol"] for item in data["data"]]
-    return stocks
+    return ['MANKIND', 'TIINDIA', 'OFSS', 'IDFCFIRSTB', 'TMPV', 'FORTIS', 'JSWENERGY', 'SOLARINDS', 'CGPOWER', 'BEL', 'BDL', 'POWERINDIA', 'BANDHANBNK', 'PERSISTENT', 'MAXHEALTH', 'POLYCAB', 'ALKEM', 'BANKBARODA', 'AUROPHARMA', 'OIL', 'PRESTIGE', 'ZYDUSLIFE', 'EICHERMOT', 'IDEA', 'ADANIPORTS', 'NMDC', 'HINDPETRO', 'UPL', 'PETRONET', 'ONGC', 'MAZDOCK', 'KEI', 'LUPIN', 'TCS', 'KPITTECH', 'SUNPHARMA', 'VOLTAS', 'MOTHERSON', 'LAURUSLABS', 'DELHIVERY', 'ICICIPRULI', 'PIIND', 'BLUESTARCO', 'RELIANCE', 'GLENMARK', 'HAL', 'BSE', 'IOC', 'YESBANK', 'PHOENIXLTD', 'UNOMINDA', 'MARUTI', 'ICICIBANK', 'DRREDDY', 'SHRIRAMFIN', 'CIPLA', 'CUMMINSIND', 'DABUR', 'VEDL', 'TECHM', 'SBILIFE', 'PIDILITIND', 'INDUSINDBK', 'HDFCAMC', 'ADANIENSOL', 'ABCAPITAL', 'KAYNES', 'BAJFINANCE', 'WAAREEENER', 'INFY', 'OBEROIRLTY', 'PNBHOUSING', 'RVNL', 'DIVISLAB', 'VBL', 'HCLTECH', 'HDFCLIFE', 'NATIONALUM', 'TATATECH', 'MPHASIS', 'HINDALCO', 'SAIL', 'JSWSTEEL', 'ASTRAL', 'JINDALSTEL', 'NAUKRI', 'POLICYBZR', 'HINDUNILVR', 'DLF', 'BHARTIARTL', 'BAJAJ-AUTO', 'INDHOTEL', 'JIOFIN', 'BPCL', 'COLPAL', 'AMBUJACEM', 'TORNTPHARM', 'HEROMOTOCO', 'PGEL', 'TITAN', 'TVSMOTOR', 'LT', 'ETERNAL', 'INDUSTOWER', 'FEDERALBNK', 'INOXWIND', 'KOTAKBANK', 'NUVAMA', 'BAJAJFINSV', 'UNIONBANK', 'ADANIGREEN', 'TATASTEEL', 'ASHOKLEY', 'BANKINDIA', 'GODREJCP', 'BHEL', 'TATAPOWER', 'IEX', 'INDIGO', 'KALYANKJIL', 'PPLPHARMA', 'ABB', 'SIEMENS', 'PNB', 'BOSCHLTD', 'ITC', 'ICICIGI', 'APOLLOHOSP', 'HINDZINC', 'DALBHARAT', 'SYNGENE', 'SUZLON', 'NYKAA', 'SHREECEM', 'EXIDEIND', 'BHARATFORG', 'M&M', '360ONE', 'INDIANB', 'SRF', 'SBIN', 'GAIL', 'GRASIM', 'COFORGE', 'SWIGGY', 'MARICO', 'RECLTD', 'GMRAIRPORT', 'NHPC', 'MFSL', 'NBCC', 'GODREJPROP', 'HDFCBANK', 'HAVELLS', 'NESTLEIND', 'CONCOR', 'CROMPTON', 'LICI', 'AUBANK', 'JUBLFOOD', 'LICHSGFIN', 'RBLBANK', 'AXISBANK', 'TORNTPOWER', 'SONACOMS', 'APLAPOLLO', 'PAYTM', 'WIPRO', 'IREDA', 'TATAELXSI', 'ULTRACEMCO', 'ASIANPAINT', 'AMBER', 'ADANIENT', 'TATACONSUM', 'NTPC', 'BRITANNIA', 'LTIM', 'PAGEIND', 'SUPREMEIND', 'DMART', 'KFINTECH', 'CANBK', 'CAMS', 'HUDCO', 'IRFC', 'COALINDIA', 'POWERGRID', 'PFC', 'BIOCON', 'TRENT', 'MCX', 'BAJAJHLDNG', 'PREMIERENE', 'LODHA', 'DIXON', 'PATANJALI', 'LTF', 'MUTHOOTFIN', 'SAMMAANCAP', 'SBICARD', 'UNITDSPR', 'CHOLAFIN', 'CDSL', 'MANAPPURAM', 'ANGELONE']
 
 # @st.cache_data
 # def get_fno_list():

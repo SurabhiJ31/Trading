@@ -31,9 +31,13 @@ class AnnouncementService:
 
     def get_latest_nse_announcement_time(self):
         try:
-           latest_time = self.repo.get_latest_announcement_time()
-           if latest_time is None:
+            record = self.repo.get_latest_announcement_time()
+            if record is None:
                latest_time = datetime.now()-timedelta(hours=3)
-           return latest_time
+            else:
+               latest_time=record["Published_Time"]
+               latest_time = datetime.fromisoformat(latest_time)
+               latest_time = latest_time.replace(tzinfo=None)
+            return latest_time
         except Exception as e:
             logger.error(e)
