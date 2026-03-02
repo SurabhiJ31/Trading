@@ -31,9 +31,7 @@ create table if not exists daily_prices (
     high numeric,
     low numeric,
     close numeric,
-    adj_close numeric,
     volume bigint,
-
     created_at timestamp default now(),
     unique(stock_id, trade_date)
 );
@@ -68,3 +66,13 @@ on daily_prices(trade_date);
 
 create index if not exists idx_metrics_stock_date
 on daily_metrics(stock_id, trade_date desc);
+
+
+
+create view stock_latest_metrics as
+select
+    s.symbol,
+    s.industry,
+    m.*
+from daily_metrics m
+join stocks s on s.id = m.stock_id;

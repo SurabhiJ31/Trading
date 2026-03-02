@@ -1,65 +1,22 @@
-from datetime import datetime, timedelta
+
 import yfinance as yf
 import streamlit as st
 import pandas as pd
-from fno import has_fno
+from fno import has_fno, get_companies_with_fno
 from ta.momentum import RSIIndicator
-from service_provider import get_companies_service
+from service_provider import get_companies_service, get_stock_info_service
+from global_logging import logger
+from datetime import datetime
+import time
 
 comp_service=get_companies_service()
+stock_info_service=get_stock_info_service()
 
-windows = {
-    "12W": 60,   
-    "26W": 130,  
-    "52W": 260  
-}
 
-BILLION = 1000000000
 
 symbols=comp_service.get_company_symbols()
 
 
-@st.cache_data(ttl="1d")
-def get_stock_data():
-    """
-    Batched download to ensure data stays aligned per ticker and avoid
-    per-symbol inconsistencies seen with many concurrent calls.
-    Returns a dict: symbol -> DataFrame with columns (Open, High, Low, Close, Adj Close, Volume, Stock)
-    """
-    ticker_list = [s + ".NS" for s in symbols]
-    data = yf.download(
-        ticker_list,
-        period="1y",
-        progress=False,
-        group_by="ticker",
-        threads=True,
-        auto_adjust=False,
-    )
-
-    out = {}
-    if isinstance(data.columns, pd.MultiIndex):
-        # MultiIndex columns: level 0 = ticker
-        for s in symbols:
-            tkr = s + ".NS"
-            try:
-                df = data.xs(tkr, level=0, axis=1)
-            except KeyError:
-                continue
-            df = df.dropna()
-            if df.empty:
-                continue
-            df = df.copy()
-            df["Stock"] = s
-            out[s] = df
-    else:
-        # Single symbol case fallback
-        df = data.dropna()
-        if not df.empty:
-            df = df.copy()
-            df["Stock"] = symbols[0] if symbols else ""
-            out[df["Stock"].iloc[0]] = df
-
-    return out
 
 
 def get_moving_average(series, days):
@@ -69,47 +26,149 @@ def get_rsi(series,days):
     rsi = RSIIndicator(series, window=days).rsi()
     return round(rsi.iloc[-1], 2)
 
+def insert_nse_raw_data(timerange):
 
+    ticker_list = [s + ".NS" for s in get_companies_with_fno()]
+    stock_map = comp_service.get_stocks_with_ids()
+    records = []
+    data = None
 
+    try:
+        data = yf.download(
+            ticker_list,
+            period=timerange,
+            group_by="ticker",
+            threads=True,
+            progress=False
+        )
+    except Exception as e:
+        logger.error(e)
 
-def get_computed_date(all_data):
-    infos=[]
-    for s, df in all_data.items():
-        if has_fno(s):
-            close_series = df["Close"]
-            if isinstance(close_series, pd.DataFrame):
-                close_series = close_series.iloc[:, 0]
+    if data is not None:
+
+        if isinstance(data.columns, pd.MultiIndex):
+            for s in symbols:
+                tkr = s + ".NS"
+                try:
+                    df = data.xs(tkr, level=0, axis=1)
+                except KeyError:
+                    continue
+
+                df = df.dropna()
+                if df.empty:
+                    continue
+
+                
+
+                stock_id = stock_map[s]
+                if stock_map[s] is None:
+                    logger.info(f"Not exists {s}")
+
+                
+
+                for date, row in df.iterrows():
+                    try:
+                        records.append({
+                            "stock_id": stock_id,
+                            "trade_date": str(date.date()),
+                            "open": float(row["Open"]),
+                            "high": float(row["High"]),
+                            "low": float(row["Low"]),
+                            "close": float(row["Close"]),
+                            "volume": int(row["Volume"])
+                        })
+                    except Exception as e:
+                        logger.error(e)
+                        logger.info(f"Problem in record {stock_id} with data {row}")
+    
+    if records:
+        stock_info_service.add_daily_records(records)
+
+def compute_nse_daily_metrics():
+
+    metrics_records=[]
+    stock_map = comp_service.get_stocks_with_ids()
+    for s in get_companies_with_fno():
+        try:
+            stock_id = stock_map[s]
+            records = stock_info_service.get_previous_records(100, stock_id)
+            df=pd.DataFrame(records)
+            if df.empty:
+                logger.info("empty")
+                continue
+            if len(df) < 60:
+                logger.info(f"length for stock {stock_id} is {len(df)}")
+                continue
+
+            latest_trade_date = df["trade_date"].iloc[-1]
+
+            if stock_info_service.does_daily_metrics_exist(stock_id, latest_trade_date):
+                logger.info(f"already exists for {stock_id}")
+                continue  # already computed
+
+            close_series = df["close"]
+
             current = float(close_series.iloc[-1])
+
             ma_14=get_moving_average(close_series,14)
             ma_30=get_moving_average(close_series,30)
             ma_60=get_moving_average(close_series,60)
-            info = {"Stock": s,
-                   "Current Price": current,
-                   "Industry": comp_service.get_industry(s),
-                   "MA - 14D": ma_14,
-                   "MA - 30D": ma_30,
-                   "MA - 60D": ma_60,
-                   "percent change - 14D": round(((current-ma_14)/current),2),
-                   "percent change - 30D": round(((current-ma_30)/current),2),
-                   "percent change - 60D": round(((current-ma_60)/current),2),
-                   "RSI - 14D": get_rsi(close_series,14),
-                   "RSI - 30D": get_rsi(close_series,30),
-                   "RSI - 60D": get_rsi(close_series,60)}
-            infos.append(info)
-    return pd.DataFrame(infos)
-            
+
+            rsi_14 = get_rsi(close_series,14)
+            rsi_30 = get_rsi(close_series,30)
+            rsi_60 = get_rsi(close_series,60)
+
+            metrics_records.append({
+                "stock_id": stock_id,
+                "trade_date": latest_trade_date,
+                "current_price": current,
+                "ma_14": ma_14,
+                "ma_30": ma_30,
+                "ma_60": ma_60,
+                "pct_change_14": round((current - ma_14) / current, 4),
+                "pct_change_30": round((current - ma_30) / current, 4),
+                "pct_change_60": round((current - ma_60) / current, 4),
+                "rsi_14": rsi_14,
+                "rsi_30": rsi_30,
+                "rsi_60": rsi_60
+            })
+        except Exception as e:
+            logger.error(msg=f" Erro for stock {stock_id}", args=e)
+
+    if metrics_records:
+        stock_info_service.add_daily_metrics(metrics_records)   
+
+    return metrics_records
 
 
 
+def nse_raw_data_updater():
+    while True:
+        logger.info(f"nse raw data executed at {datetime.now().date()}")
+        a = insert_nse_raw_data("1d")
+        logger.info(f"records count {len(a)}")
+        time.sleep(60) #10 mins
 
-
-
-
-
-
-@st.cache_data(show_spinner=False, ttl=900)
-def get_mohit_data():
-    all_data = get_stock_data()
-    return get_computed_date(all_data)
-
+def get_all_nse_kpis(date):
+    logger.info(f"fetching metrics for {date}")
+    a=stock_info_service.get_combined_daily_metrics(str(date))
     
+    if len(a.data)==0:
+        logger.info("metrics not available. Inserting data")
+        insert_nse_raw_data("1d")
+        logger.info("calculating data")
+        compute_nse_daily_metrics()
+
+    df = (
+    pd.json_normalize(a.data)
+      .rename(columns={
+          "rsi_14": "RSI - 14D",
+          "rsi_30": "RSI - 30D",
+          "rsi_60": "RSI - 60D",
+          "pct_change_14":"percent change - 14D",
+          "pct_change_30":"percent change - 30D",
+          "pct_change_60":"percent change - 60D",
+      })
+)
+    
+    return df

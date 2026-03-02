@@ -67,24 +67,25 @@ def fetch_nse_corporate_announcements():
         feed = feedparser.parse(response.content)
         return feed.entries
     except requests.exceptions.RequestException as e:
-        #TODO: Log error
+        logger.error(e)
         return None
 
 def parse_announcements(feed_entries):
     if feed_entries is None:
+        logger.info(f"no feed")
         return None
     
     try:
+        
         global recent_datetime
         latest_feed_date = datetime.strptime(feed_entries[0].get('published'), date_format)
+  
         new_fno_announcements=[] 
         for entry in feed_entries:
             try:
                 feed_date=datetime.strptime(entry.get('published'), date_format)
                 if feed_date > recent_datetime :
-
                     norm_title=comp_service.normalize_name(entry.title)
-                    #logger.info(f"nse announcement fetched for {norm_title}")
                     companies_norm=get_fno_companies_normalised()
                     if norm_title in companies_norm.keys():
 
@@ -97,12 +98,13 @@ def parse_announcements(feed_entries):
                         })
                 else:
                     break
-            except:
+            except Exception as e:
+                logger.error(e)
                 pass
         recent_datetime=latest_feed_date
         return new_fno_announcements
-    except:
-        #TODO: Log error
+    except Exception as e:
+        logger.error(e)
         return None
 
 

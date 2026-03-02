@@ -8,6 +8,7 @@
 /Nifty50_Stock_Data.xlsx
 /plot_chart_for_historical_data.py
 execute-option-data-generation.py
+__pycache__
 __pycache__/insights.cpython-314.pyc
 __pycache__/companies.cpython-314.pyc
 __pycache__/chart_generator.cpython-314.pyc
@@ -22,3 +23,4 @@ __pycache__/stock_info_generator.cpython-314.pyc
 msp-server/server.py
 conf.env.dev
 stocks.csv
+nse_fno_symbols.txt

@@ -14,7 +14,7 @@ class CompaniesService:
     def get_all_stocks(self):
         try:
             if self._stocks is None:
-                stock_records=self.repo.get_all()
+                stock_records=self.repo.get_all("symbol,industry,company")
                 self._stocks = {
                 row["symbol"]: {
                     "company": row["company"],
@@ -25,6 +25,14 @@ class CompaniesService:
             return self._stocks
         except Exception as e:
             logger.error(e)
+
+    def get_stocks_with_ids(self):
+        try:
+            company_with_ids= self.repo.get_all("id,symbol")
+            updated_data= {row["symbol"]: row["id"] for row in company_with_ids}
+            return updated_data
+        except Exception as e:
+            logger.error(msg="Error while parsing",args=e)
 
     def get_company_symbols(self):
         stocks=self.get_all_stocks()
