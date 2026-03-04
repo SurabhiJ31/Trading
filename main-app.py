@@ -8,7 +8,7 @@ st.set_page_config(
 )
 import pandas as pd
 from ai_insights import get_insights, render_batch_insights
-from stock_info_generator import insert_nse_raw_data,get_all_nse_kpis,compute_nse_daily_metrics
+from stock_info_generator import compute_ma_buckets,get_all_nse_kpis
 from nse_announcement_parser import nse_feed_updater
 import threading
 from datetime import date, timedelta
@@ -21,6 +21,7 @@ if "notifications" not in st.session_state:
     st.session_state.notifications = []
 
 if "thread_started" not in st.session_state:
+
     thread = threading.Thread(
         target=nse_feed_updater,
         daemon=True
@@ -55,6 +56,9 @@ if "custom_start_date" not in st.session_state:
 
 if "custom_end_date" not in st.session_state:
     st.session_state.custom_end_date = date.today()
+
+if "ma_filter" not in st.session_state:
+    st.session_state.ma_filter = "All"
 
 
 def refresh_button_clicked():
@@ -213,7 +217,7 @@ with tab2:
 
 def render_filters():
     try:
-        col1, col2 = st.columns([2, 3])
+        col1, col2,col3 = st.columns([2, 3,3])
 
         with col1:
             filter_option = st.selectbox(
@@ -236,6 +240,10 @@ def render_filters():
                 )
                 st.session_state.custom_start_date = start_date
                 st.session_state.custom_end_date = end_date
+        with col3:
+            st.selectbox("Price vs Moving Average",
+                         ["All","Above MA","Below MA"],
+                         key="ma_filter")
     except:
         pass
 
@@ -251,8 +259,15 @@ with tab3:
             start_date =st.session_state.custom_start_date
             end_date=st.session_state.custom_end_date
         
+        
         today_insights=ann_service.list_announcements_for_given_date(start_date,end_date)
         df=pd.DataFrame(today_insights)
+        if st.session_state.ma_filter !="All":
+            ma_less_than_current, ma_more_than_current=compute_ma_buckets(today_dt)
+            if st.session_state.ma_filter =="Above MA":
+                df=df[df["Symbol"].isin(ma_less_than_current)]
+            else:
+                df=df[df["Symbol"].isin(ma_more_than_current)]
         st.dataframe(df)
     render_filters()
     show_nse_insights()

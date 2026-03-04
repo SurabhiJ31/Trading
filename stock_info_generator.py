@@ -26,10 +26,14 @@ def get_rsi(series,days):
     rsi = RSIIndicator(series, window=days).rsi()
     return round(rsi.iloc[-1], 2)
 
+@st.cache_data(ttl=86400)
+def get_stock_map():
+    return comp_service.get_stocks_with_ids()
+
 def insert_nse_raw_data(timerange):
 
     ticker_list = [s + ".NS" for s in get_companies_with_fno()]
-    stock_map = comp_service.get_stocks_with_ids()
+    stock_map = get_stock_map()
     records = []
     data = None
 
@@ -148,6 +152,26 @@ def nse_raw_data_updater():
         a = insert_nse_raw_data("1d")
         logger.info(f"records count {len(a)}")
         time.sleep(60) #10 mins
+
+def compute_ma_buckets(date):
+    ma_more_than_current=[]
+    ma_less_than_current=[]
+    logger.info(f"fetching metrics for {date}")
+    a=stock_info_service.get_combined_daily_metrics(str(date))
+    metrics=a.data
+    if len(metrics) !=0:
+        for row in metrics:
+            current = row["current_price"]
+
+            if current > row["ma_14"] and current > row["ma_30"] and current > row["ma_60"]:
+                ma_less_than_current.append(row["symbol"])
+
+            if current < row["ma_14"] and current < row["ma_30"] and current < row["ma_60"]:
+                ma_more_than_current.append(row["symbol"])
+    return ma_less_than_current,ma_more_than_current
+
+
+
 
 def get_all_nse_kpis(date):
     logger.info(f"fetching metrics for {date}")

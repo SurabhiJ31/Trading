@@ -417,7 +417,7 @@ def get_insight_for_nse_announcement(announcement):
         
         try:
             
-            notif_text = f"New announcemnt for {title} with sentiment {sent_score}"
+            notif_text = f"New announcement for {title} with sentiment {sent_score}"
             add_notification(message=notif_text)
                 
         except Exception as e:
