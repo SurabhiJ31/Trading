@@ -81,21 +81,26 @@ def parse_announcements(feed_entries):
         latest_feed_date = datetime.strptime(feed_entries[0].get('published'), date_format)
   
         new_fno_announcements=[] 
+        existing_links=[]
         for entry in feed_entries:
             try:
+                
                 feed_date=datetime.strptime(entry.get('published'), date_format)
                 if feed_date > recent_datetime :
                     norm_title=comp_service.normalize_name(entry.title)
                     companies_norm=get_fno_companies_normalised()
                     if norm_title in companies_norm.keys():
+                        link = entry.get("link")
+                        if link and link not in existing_links:
+                            existing_links.append(link)
 
-                        new_fno_announcements.append({
-                        "Symbol":companies_norm[norm_title],
-                        "title": norm_title,
-                        "link": entry.get('link'),
-                        "summary": entry.summary,
-                        "published":entry.get('published')
-                        })
+                            new_fno_announcements.append({
+                            "Symbol":companies_norm[norm_title],
+                            "title": norm_title,
+                            "link": entry.get('link'),
+                            "summary": entry.summary,
+                            "published":entry.get('published')
+                            })
                 else:
                     break
             except Exception as e:
