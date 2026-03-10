@@ -69,6 +69,20 @@ def fetch_nse_corporate_announcements():
     except requests.exceptions.RequestException as e:
         logger.error(e)
         return None
+    
+def parse_published(dt_str):
+    formats = [
+        '%d-%b-%Y %H:%M:%S',
+        '%d-%b-%Y %H:%M'
+    ]
+    
+    for fmt in formats:
+        try:
+            return datetime.strptime(dt_str, fmt)
+        except ValueError:
+            pass
+    
+    raise ValueError(f"Unknown datetime format: {dt_str}")
 
 def parse_announcements(feed_entries):
     if feed_entries is None:
@@ -78,14 +92,14 @@ def parse_announcements(feed_entries):
     try:
         
         global recent_datetime
-        latest_feed_date = datetime.strptime(feed_entries[0].get('published'), date_format)
+        latest_feed_date = parse_published(feed_entries[0].get('published')) 
   
         new_fno_announcements=[] 
         existing_links=[]
         for entry in feed_entries:
             try:
                 
-                feed_date=datetime.strptime(entry.get('published'), date_format)
+                feed_date= parse_published(entry.get('published'))
                 if feed_date > recent_datetime :
                     norm_title=comp_service.normalize_name(entry.title)
                     companies_norm=get_fno_companies_normalised()
