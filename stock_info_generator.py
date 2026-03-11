@@ -1,4 +1,6 @@
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 import yfinance as yf
 import streamlit as st
 import pandas as pd
@@ -88,62 +90,76 @@ def insert_nse_raw_data(timerange):
     if records:
         stock_info_service.add_daily_records(records)
 
+def compute_nse_daily_metrics_stock(s, stock_map):
+    try:
+        stock_id = stock_map[s]
+
+        records = stock_info_service.get_previous_records(100, stock_id)
+        df = pd.DataFrame(records)
+
+        if df.empty or len(df) < 60:
+            return None
+
+        latest_trade_date = df["trade_date"].iloc[-1]
+
+        if stock_info_service.does_daily_metrics_exist(stock_id, latest_trade_date):
+            logger.info(f"already exists for {stock_id}")
+            return None
+
+        close_series = df["close"]
+        current = float(close_series.iloc[-1])
+
+        ma_14 = get_moving_average(close_series, 14)
+        ma_30 = get_moving_average(close_series, 30)
+        ma_60 = get_moving_average(close_series, 60)
+
+        rsi_14 = get_rsi(close_series, 14)
+        rsi_30 = get_rsi(close_series, 30)
+        rsi_60 = get_rsi(close_series, 60)
+
+        return {
+            "stock_id": stock_id,
+            "trade_date": latest_trade_date,
+            "current_price": current,
+            "ma_14": ma_14,
+            "ma_30": ma_30,
+            "ma_60": ma_60,
+            "pct_change_14": round((current - ma_14) / current, 4),
+            "pct_change_30": round((current - ma_30) / current, 4),
+            "pct_change_60": round((current - ma_60) / current, 4),
+            "rsi_14": rsi_14,
+            "rsi_30": rsi_30,
+            "rsi_60": rsi_60
+        }
+
+    except Exception as e:
+        logger.error(f"Error for stock {s}: {e}")
+        return None
+
+
 def compute_nse_daily_metrics():
 
-    metrics_records=[]
+    metrics_records = []
+
     stock_map = comp_service.get_stocks_with_ids()
-    for s in get_companies_with_fno():
-        try:
-            stock_id = stock_map[s]
-            records = stock_info_service.get_previous_records(100, stock_id)
-            df=pd.DataFrame(records)
-            if df.empty:
-                logger.info("empty")
-                continue
-            if len(df) < 60:
-                logger.info(f"length for stock {stock_id} is {len(df)}")
-                continue
+    companies = get_companies_with_fno()
 
-            latest_trade_date = df["trade_date"].iloc[-1]
+    with ThreadPoolExecutor(max_workers=8) as executor:
 
-            if stock_info_service.does_daily_metrics_exist(stock_id, latest_trade_date):
-                logger.info(f"already exists for {stock_id}")
-                continue  # already computed
+        futures = [
+            executor.submit(compute_nse_daily_metrics_stock, s, stock_map)
+            for s in companies
+        ]
 
-            close_series = df["close"]
-
-            current = float(close_series.iloc[-1])
-
-            ma_14=get_moving_average(close_series,14)
-            ma_30=get_moving_average(close_series,30)
-            ma_60=get_moving_average(close_series,60)
-
-            rsi_14 = get_rsi(close_series,14)
-            rsi_30 = get_rsi(close_series,30)
-            rsi_60 = get_rsi(close_series,60)
-
-            metrics_records.append({
-                "stock_id": stock_id,
-                "trade_date": latest_trade_date,
-                "current_price": current,
-                "ma_14": ma_14,
-                "ma_30": ma_30,
-                "ma_60": ma_60,
-                "pct_change_14": round((current - ma_14) / current, 4),
-                "pct_change_30": round((current - ma_30) / current, 4),
-                "pct_change_60": round((current - ma_60) / current, 4),
-                "rsi_14": rsi_14,
-                "rsi_30": rsi_30,
-                "rsi_60": rsi_60
-            })
-        except Exception as e:
-            logger.error(msg=f" Erro for stock {stock_id}", args=e)
+        for future in as_completed(futures):
+            result = future.result()
+            if result:
+                metrics_records.append(result)
 
     if metrics_records:
-        stock_info_service.add_daily_metrics(metrics_records)   
+        stock_info_service.add_daily_metrics(metrics_records)
 
     return metrics_records
-
 
 
 def nse_raw_data_updater():

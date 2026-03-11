@@ -11,7 +11,10 @@ class StockInfoRepository:
     def get_limited_time_records(self,cutoff_date,stock_id):
         try:
             response = self.client.table("daily_prices").select("stock_id,trade_date,close").eq("stock_id", stock_id).gte("trade_date", cutoff_date).order("trade_date").limit(100000).execute()
-            return response.data
+            if response:
+                return response.data
+            else:
+                return None
         except Exception as e:
             logger.error(e)
     
