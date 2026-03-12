@@ -10,6 +10,7 @@ import streamlit as st
 from notification_manager import add_notification
 from global_logging import logger
 from service_provider import get_companies_service
+from infrastructure.secret_manager import get_secret
 
 comp_service=get_companies_service()
 selected_companies = get_companies_with_fno()
@@ -62,7 +63,7 @@ def fetch_company_news(
     to_date: datetime,
     language: str = "en",
 ) -> List[Dict[str, Any]]:
-    api_key = st.secrets["NEWSAPI_KEY"]
+    api_key = get_secret("NEWSAPI_KEY")
     if not api_key:
         return []
     params = {
@@ -287,7 +288,7 @@ def get_company_sentiment_cached(
 
 @st.cache_resource(show_spinner=False)
 def get_openai_client() -> Dict[str, Any]:
-    api_key = st.secrets["OPENAI_API_KEY"].replace("\n", "")
+    api_key = get_secret("OPENAI_API_KEY").replace("\n", "")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY environment variable is required.")
 
