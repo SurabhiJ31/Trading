@@ -272,6 +272,18 @@ with tab3:
     render_filters()
     show_nse_insights()
 
+with tab4:
+    if st.button("Uncaught exception"):
+        a=1
+        b=a[0]
+    if st.button("Caught exception and error displayed"):
+        try:
+            raise Exception("exception thrown")
+        except Exception as e:
+            logger.error(e)
+    
+
+
 
 
     
